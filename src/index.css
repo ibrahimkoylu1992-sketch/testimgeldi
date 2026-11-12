@@ -10,6 +10,17 @@
     font-family: 'JetBrains Mono', monospace;
     font-variant-numeric: tabular-nums;
   }
+
+  #nl-badge-frame,
+  #nl-hud-frame,
+  iframe[id*="nl-badge"],
+  iframe[id*="nl-hud"],
+  iframe[id*="netlify"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
 }
 
 @media print {
