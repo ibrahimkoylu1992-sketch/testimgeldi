@@ -1,0 +1,6 @@
+{
+  "name": "testCrafta - Online Sınav & Optik Okuma Sistemi",
+  "description": "Öğretmenler için otomatik optik form okuma, cevap anahtarı oluşturma, soru puanlama ve sınav analiz platformu.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

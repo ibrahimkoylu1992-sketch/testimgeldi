@@ -1,0 +1,140 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile document containing authentication, role, school, and subscription status.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique user ID" },
+        "name": { "type": "string", "maxLength": 100, "description": "User full name" },
+        "email": { "type": "string", "format": "email", "description": "User email address" },
+        "role": { "type": "string", "enum": ["superadmin", "admin", "teacher", "student"], "description": "System role" },
+        "school": { "type": "string", "maxLength": 150, "description": "School or institution" },
+        "branch": { "type": "string", "maxLength": 100, "description": "Teaching branch or major" },
+        "studentNumber": { "type": "string", "maxLength": 30, "description": "Student school number" },
+        "gradeLevel": { "type": "string", "maxLength": 50, "description": "Class or grade level" },
+        "phone": { "type": "string", "maxLength": 30, "description": "Contact phone number" },
+        "createdAt": { "type": "string", "description": "Account creation timestamp" },
+        "isActive": { "type": "boolean", "description": "Whether the user account is active" },
+        "subscriptionStatus": { "type": "string", "enum": ["trial", "active", "expired", "lifetime"], "description": "Subscription tier status" },
+        "subscriptionStartDate": { "type": "string", "description": "Subscription start date" },
+        "subscriptionEndDate": { "type": "string", "description": "Subscription expiration date" }
+      },
+      "required": ["id", "name", "email", "role"]
+    },
+    "Exam": {
+      "title": "Exam",
+      "description": "Optical exam document with answer key, booklet settings, and subject sections.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique exam ID" },
+        "title": { "type": "string", "maxLength": 200, "description": "Exam title" },
+        "subject": { "type": "string", "maxLength": 100, "description": "Exam subject" },
+        "gradeLevel": { "type": "string", "maxLength": 50, "description": "Target grade level" },
+        "creatorId": { "type": "string", "description": "Teacher/Admin ID who created the exam" },
+        "creatorName": { "type": "string", "maxLength": 100, "description": "Name of the creator" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "questionCount": { "type": "number", "description": "Total number of questions" },
+        "optionCount": { "type": "number", "description": "Options per question (4 or 5)" }
+      },
+      "required": ["id", "title", "creatorId", "questionCount"]
+    },
+    "StudentResult": {
+      "title": "StudentResult",
+      "description": "Graded optical paper result for a student in an exam.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique result ID" },
+        "examId": { "type": "string", "description": "Associated exam ID" },
+        "examTitle": { "type": "string", "maxLength": 200, "description": "Exam title" },
+        "studentNumber": { "type": "string", "maxLength": 30, "description": "Student number" },
+        "studentName": { "type": "string", "maxLength": 100, "description": "Student full name" },
+        "booklet": { "type": "string", "enum": ["A", "B", "C", "D"], "description": "Booklet type" },
+        "score": { "type": "number", "description": "Calculated score" },
+        "correctCount": { "type": "number", "description": "Correct answers count" },
+        "wrongCount": { "type": "number", "description": "Wrong answers count" },
+        "emptyCount": { "type": "number", "description": "Empty answers count" },
+        "netScore": { "type": "number", "description": "Calculated net score" },
+        "scannedAt": { "type": "string", "description": "Scan timestamp" }
+      },
+      "required": ["id", "examId", "studentNumber", "scannedAt"]
+    },
+    "SubscriptionRequest": {
+      "title": "SubscriptionRequest",
+      "description": "Package purchase request sent to admin for approval.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique request ID" },
+        "userId": { "type": "string", "description": "Requester user ID" },
+        "userName": { "type": "string", "maxLength": 100, "description": "Requester name" },
+        "userEmail": { "type": "string", "format": "email", "description": "Requester email" },
+        "packageId": { "type": "string", "description": "Selected package ID" },
+        "packageName": { "type": "string", "maxLength": 100, "description": "Package name" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"], "description": "Approval status" },
+        "requestedAt": { "type": "string", "description": "Request timestamp" }
+      },
+      "required": ["id", "userId", "userEmail", "packageId", "status"]
+    },
+    "SupportTicket": {
+      "title": "SupportTicket",
+      "description": "Issue or feedback ticket submitted by user to superadmin.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique ticket ID" },
+        "userId": { "type": "string", "description": "Submitter user ID" },
+        "userName": { "type": "string", "maxLength": 100, "description": "Submitter name" },
+        "userRole": { "type": "string", "description": "User role at submission" },
+        "email": { "type": "string", "format": "email", "description": "Contact email" },
+        "title": { "type": "string", "maxLength": 200, "description": "Issue title" },
+        "category": { "type": "string", "maxLength": 50, "description": "Category" },
+        "message": { "type": "string", "maxLength": 3000, "description": "Ticket description" },
+        "status": { "type": "string", "enum": ["open", "in_progress", "resolved"], "description": "Ticket status" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["id", "userId", "email", "title", "message", "status"]
+    },
+    "QuizDocument": {
+      "title": "QuizDocument",
+      "description": "Two-column printable A4 quiz test sheet document.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique quiz document ID" },
+        "title": { "type": "string", "maxLength": 200, "description": "Quiz title" },
+        "subject": { "type": "string", "maxLength": 100, "description": "Subject name" },
+        "gradeLevel": { "type": "string", "maxLength": 50, "description": "Grade level" },
+        "schoolName": { "type": "string", "maxLength": 150, "description": "School name" },
+        "creatorId": { "type": "string", "description": "Author user ID" },
+        "creatorName": { "type": "string", "maxLength": 100, "description": "Author name" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" },
+        "updatedAt": { "type": "string", "description": "Last update timestamp" }
+      },
+      "required": ["id", "title", "creatorId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User accounts and subscription records."
+    },
+    "/exams/{examId}": {
+      "schema": { "$ref": "#/entities/Exam" },
+      "description": "Exams created by teachers and administrators."
+    },
+    "/results/{resultId}": {
+      "schema": { "$ref": "#/entities/StudentResult" },
+      "description": "Scanned optical exam scores and student results."
+    },
+    "/subscriptionRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/SubscriptionRequest" },
+      "description": "Teacher subscription upgrade requests."
+    },
+    "/supportTickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicket" },
+      "description": "User bug reports and feature requests."
+    },
+    "/quizzes/{quizId}": {
+      "schema": { "$ref": "#/entities/QuizDocument" },
+      "description": "Printable A4 quiz sheets and test papers."
+    }
+  }
+}
