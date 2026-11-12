@@ -65,6 +65,7 @@ export interface BookletAnswerKey {
 }
 
 export type PenaltyOption = 'none' | '3to1' | '4to1';
+export type PenaltyMode = 'fractional' | 'floor';
 
 export interface ExamSubjectSection {
   id: string;
@@ -90,6 +91,7 @@ export interface Exam {
   scoringType: 'equal' | 'custom';
   questionPoints: Record<number, number>;
   penalty: PenaltyOption;
+  penaltyMode?: PenaltyMode; // 'fractional' (Örn: 2 yanlış = -0.67 net) veya 'floor' (3 yanlışı tamamlamadan doğru gitmez)
   totalPaperCount: number;
   averageScore?: number;
   highestScore?: number;

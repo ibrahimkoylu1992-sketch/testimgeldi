@@ -236,8 +236,11 @@ export const StudentResultsView: React.FC<StudentResultsViewProps> = ({ onOpenRe
                             }
                           }
                           let penaltyDeduction = 0;
-                          if (exam.penalty === '3to1') penaltyDeduction = secWrong / 3;
-                          else if (exam.penalty === '4to1') penaltyDeduction = secWrong / 4;
+                          if (exam.penalty === '3to1') {
+                            penaltyDeduction = exam.penaltyMode === 'floor' ? Math.floor(secWrong / 3) : secWrong / 3;
+                          } else if (exam.penalty === '4to1') {
+                            penaltyDeduction = exam.penaltyMode === 'floor' ? Math.floor(secWrong / 4) : secWrong / 4;
+                          }
                           const secNet = Math.max(0, secCorrect - penaltyDeduction);
 
                           return (

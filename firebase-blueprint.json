@@ -35,7 +35,9 @@
         "creatorName": { "type": "string", "maxLength": 100, "description": "Name of the creator" },
         "createdAt": { "type": "string", "description": "Creation timestamp" },
         "questionCount": { "type": "number", "description": "Total number of questions" },
-        "optionCount": { "type": "number", "description": "Options per question (4 or 5)" }
+        "optionCount": { "type": "number", "description": "Options per question (4 or 5)" },
+        "penalty": { "type": "string", "enum": ["none", "3to1", "4to1"], "description": "Penalty rule" },
+        "penaltyMode": { "type": "string", "enum": ["fractional", "floor"], "description": "Whether deduction is fractional or whole threshold" }
       },
       "required": ["id", "title", "creatorId", "questionCount"]
     },

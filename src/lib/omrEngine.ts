@@ -204,13 +204,18 @@ export function evaluateStudentPaper(
     });
   }
 
-  // Calculate Net score according to penalty option
-  let netScore = correctCount;
+  // Calculate Net score according to penalty option and mode
+  let penaltyDeduction = 0;
   if (exam.penalty === '3to1') {
-    netScore = Math.max(0, correctCount - wrongCount / 3);
+    penaltyDeduction = exam.penaltyMode === 'floor'
+      ? Math.floor(wrongCount / 3)
+      : wrongCount / 3;
   } else if (exam.penalty === '4to1') {
-    netScore = Math.max(0, correctCount - wrongCount / 4);
+    penaltyDeduction = exam.penaltyMode === 'floor'
+      ? Math.floor(wrongCount / 4)
+      : wrongCount / 4;
   }
+  const netScore = Math.max(0, correctCount - penaltyDeduction);
 
   // Calculate Total Score (0 - 100 or sum of custom points)
   if (exam.scoringType === 'equal') {
@@ -218,15 +223,8 @@ export function evaluateStudentPaper(
     totalScore = Math.max(0, parseFloat((netScore * pointsPerNet).toFixed(2)));
   } else {
     const rawSum = evaluatedAnswers.reduce((sum, a) => sum + a.pointsEarned, 0);
-    if (exam.penalty === '3to1') {
-      const avgPoint = 100 / exam.questionCount;
-      totalScore = Math.max(0, parseFloat((rawSum - (wrongCount / 3) * avgPoint).toFixed(2)));
-    } else if (exam.penalty === '4to1') {
-      const avgPoint = 100 / exam.questionCount;
-      totalScore = Math.max(0, parseFloat((rawSum - (wrongCount / 4) * avgPoint).toFixed(2)));
-    } else {
-      totalScore = Math.max(0, parseFloat(rawSum.toFixed(2)));
-    }
+    const avgPoint = 100 / exam.questionCount;
+    totalScore = Math.max(0, parseFloat((rawSum - penaltyDeduction * avgPoint).toFixed(2)));
   }
 
   return {
@@ -285,12 +283,17 @@ export function getStudentSectionStats(
   const wrongCount = answers.filter((a) => !a.isCorrect && !a.isBlank).length;
   const blankCount = answers.filter((a) => a.isBlank).length;
 
-  let netScore = correctCount;
+  let penaltyDeduction = 0;
   if (exam.penalty === '3to1') {
-    netScore = Math.max(0, correctCount - wrongCount / 3);
+    penaltyDeduction = exam.penaltyMode === 'floor'
+      ? Math.floor(wrongCount / 3)
+      : wrongCount / 3;
   } else if (exam.penalty === '4to1') {
-    netScore = Math.max(0, correctCount - wrongCount / 4);
+    penaltyDeduction = exam.penaltyMode === 'floor'
+      ? Math.floor(wrongCount / 4)
+      : wrongCount / 4;
   }
+  const netScore = Math.max(0, correctCount - penaltyDeduction);
 
   let totalScore = 0;
   if (exam.scoringType === 'equal') {
@@ -299,13 +302,7 @@ export function getStudentSectionStats(
   } else {
     const rawSum = answers.reduce((sum, a) => sum + (a.isCorrect ? a.pointsEarned : 0), 0);
     const avgPoint = 100 / exam.questionCount;
-    if (exam.penalty === '3to1') {
-      totalScore = Math.max(0, parseFloat((rawSum - (wrongCount / 3) * avgPoint).toFixed(2)));
-    } else if (exam.penalty === '4to1') {
-      totalScore = Math.max(0, parseFloat((rawSum - (wrongCount / 4) * avgPoint).toFixed(2)));
-    } else {
-      totalScore = Math.max(0, parseFloat(rawSum.toFixed(2)));
-    }
+    totalScore = Math.max(0, parseFloat((rawSum - penaltyDeduction * avgPoint).toFixed(2)));
   }
 
   const roundedNet = parseFloat(netScore.toFixed(2));

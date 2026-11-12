@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from './Toast';
 import { StorageService } from '../lib/storage';
-import { Exam, BookletType, BookletAnswerKey, PenaltyOption, ExamSubjectSection } from '../types';
+import { Exam, BookletType, BookletAnswerKey, PenaltyOption, PenaltyMode, ExamSubjectSection } from '../types';
 import { parseAnswerKeyInput } from '../lib/omrEngine';
 import { X, Check, Upload, FileText, Plus, AlertCircle, Layers, Trash2 } from 'lucide-react';
 
@@ -59,6 +59,7 @@ export const ExamCreatorModal: React.FC<ExamCreatorModalProps> = ({
   const [optionCount, setOptionCount] = useState<number>(4);
   const [scoringType, setScoringType] = useState<'equal' | 'custom'>('equal');
   const [penalty, setPenalty] = useState<PenaltyOption>('3to1');
+  const [penaltyMode, setPenaltyMode] = useState<PenaltyMode>('fractional');
   const [activeBooklet, setActiveBooklet] = useState<BookletType>('A');
   const [enableMultipleBooklets, setEnableMultipleBooklets] = useState(false);
 
@@ -306,6 +307,7 @@ export const ExamCreatorModal: React.FC<ExamCreatorModalProps> = ({
       scoringType,
       questionPoints: finalPoints,
       penalty,
+      penaltyMode,
       totalPaperCount: 0,
       averageScore: 0,
       highestScore: 0,
@@ -832,6 +834,79 @@ export const ExamCreatorModal: React.FC<ExamCreatorModalProps> = ({
                 </select>
               </div>
             </div>
+
+            {penalty !== 'none' && (
+              <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-lg space-y-2 mt-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-amber-900">
+                    Kural Tamamlanmadığında Net Nasıl Hesaplansın?
+                  </label>
+                  <span className="text-[11px] font-medium text-amber-700">
+                    {penalty === '3to1' ? 'Kural: 3 Yanlış' : 'Kural: 4 Yanlış'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {/* 1. Kesirli / Yüzdesel Düşüm */}
+                  <label
+                    onClick={() => setPenaltyMode('fractional')}
+                    className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all ${
+                      penaltyMode === 'fractional'
+                        ? 'bg-white border-amber-500 ring-2 ring-amber-500/20 text-slate-900 shadow-2xs'
+                        : 'bg-white/70 border-slate-200 text-slate-700 hover:bg-white'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="penaltyMode"
+                      value="fractional"
+                      checked={penaltyMode === 'fractional'}
+                      onChange={() => setPenaltyMode('fractional')}
+                      className="mt-0.5 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <div className="space-y-0.5">
+                      <span className="block font-bold text-slate-900">
+                        Yüzdesel / Kesirli Düşüm (ÖSYM & MEB)
+                      </span>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        {penalty === '3to1'
+                          ? '2 yanlış yaparsa -0.67 net düşer. (Her yanlış 0.33 net eksiltir).'
+                          : '2 yanlış yaparsa -0.50 net düşer. (Her yanlış 0.25 net eksiltir).'}
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* 2. Tam Kural Tamamlama */}
+                  <label
+                    onClick={() => setPenaltyMode('floor')}
+                    className={`flex items-start gap-2.5 p-2.5 rounded-lg border cursor-pointer transition-all ${
+                      penaltyMode === 'floor'
+                        ? 'bg-white border-amber-500 ring-2 ring-amber-500/20 text-slate-900 shadow-2xs'
+                        : 'bg-white/70 border-slate-200 text-slate-700 hover:bg-white'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="penaltyMode"
+                      value="floor"
+                      checked={penaltyMode === 'floor'}
+                      onChange={() => setPenaltyMode('floor')}
+                      className="mt-0.5 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <div className="space-y-0.5">
+                      <span className="block font-bold text-slate-900">
+                        Tam Sayı Düşüm (Kural Tamamlama)
+                      </span>
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        {penalty === '3to1'
+                          ? '1 veya 2 yanlışta doğru gitmez (0 ceza). Yalnızca tam 3, 6, 9... yanlışa ulaşınca 1, 2, 3 doğru silinir.'
+                          : '1, 2 veya 3 yanlışta doğru gitmez (0 ceza). Yalnızca tam 4, 8, 12... yanlışa ulaşınca 1, 2, 3 doğru silinir.'}
+                      </p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
 
             {scoringType === 'custom' && (
               <div className="pt-3 border-t border-slate-200">

@@ -99,9 +99,9 @@ export const StudentReportCardModal: React.FC<StudentReportCardModalProps> = ({
                 <span className="text-slate-500">Değerlendirme:</span>{' '}
                 <span className="font-medium text-slate-800">
                   {exam.penalty === '3to1'
-                    ? '3 Yanlış 1 Doğruyu Götürür'
+                    ? `3 Yanlış 1 Doğru (${exam.penaltyMode === 'floor' ? 'Tam Kural' : 'Kesirli Net'})`
                     : exam.penalty === '4to1'
-                    ? '4 Yanlış 1 Doğruyu Götürür'
+                    ? `4 Yanlış 1 Doğru (${exam.penaltyMode === 'floor' ? 'Tam Kural' : 'Kesirli Net'})`
                     : 'Yanlış Cezası Yok'}
                 </span>
               </div>
@@ -226,8 +226,11 @@ export const StudentReportCardModal: React.FC<StudentReportCardModalProps> = ({
                       }
 
                       let penaltyDeduction = 0;
-                      if (exam.penalty === '3to1') penaltyDeduction = wrong / 3;
-                      else if (exam.penalty === '4to1') penaltyDeduction = wrong / 4;
+                      if (exam.penalty === '3to1') {
+                        penaltyDeduction = exam.penaltyMode === 'floor' ? Math.floor(wrong / 3) : wrong / 3;
+                      } else if (exam.penalty === '4to1') {
+                        penaltyDeduction = exam.penaltyMode === 'floor' ? Math.floor(wrong / 4) : wrong / 4;
+                      }
                       const net = Math.max(0, correct - penaltyDeduction);
                       const successRate = qCount > 0 ? (correct / qCount) * 100 : 0;
 

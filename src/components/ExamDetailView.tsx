@@ -216,9 +216,9 @@ export const ExamDetailView: React.FC<ExamDetailViewProps> = ({
             <span aria-hidden="true">·</span>
             <span>
               {exam.penalty === '3to1'
-                ? '3 Yanlış 1 Doğruyu Götürür'
+                ? `3 Yanlış 1 Doğru (${exam.penaltyMode === 'floor' ? 'Tam Kural' : 'Kesirli Net'})`
                 : exam.penalty === '4to1'
-                ? '4 Yanlış 1 Doğruyu Götürür'
+                ? `4 Yanlış 1 Doğru (${exam.penaltyMode === 'floor' ? 'Tam Kural' : 'Kesirli Net'})`
                 : 'Yanlış Cezası Yok'}
             </span>
           </div>
