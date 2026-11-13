@@ -131,12 +131,12 @@ function MainApp() {
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
       {/* Teacher Trial Expiration Banner if approaching end or expired */}
       {isTeacher && !isSubscriptionActive && (
-        <div className="bg-rose-600 text-white px-4 py-2 text-xs font-semibold text-center flex items-center justify-center gap-2 no-print">
+        <div className="bg-rose-600 text-white px-3 sm:px-4 py-2 text-xs font-semibold text-center flex flex-wrap items-center justify-center gap-x-2 gap-y-1 no-print">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>15 günlük deneme süreniz dolmuştur. Sınav oluşturma ve optik okuma işlemlerine devam etmek için lütfen paket seçiniz.</span>
           <button
             onClick={() => setIsSubscriptionModalOpen(true)}
-            className="ml-2 underline font-bold hover:text-rose-100 cursor-pointer"
+            className="underline font-bold hover:text-rose-100 cursor-pointer whitespace-nowrap"
           >
             Paketleri İncele & Talep Gönder
           </button>
@@ -144,12 +144,12 @@ function MainApp() {
       )}
 
       {isTeacher && isSubscriptionActive && remainingDays <= 5 && (
-        <div className="bg-amber-500 text-slate-900 px-4 py-1.5 text-xs font-semibold text-center flex items-center justify-center gap-2 no-print">
-          <Clock className="w-3.5 h-3.5" />
+        <div className="bg-amber-500 text-slate-900 px-3 sm:px-4 py-1.5 text-xs font-semibold text-center flex flex-wrap items-center justify-center gap-x-2 gap-y-1 no-print">
+          <Clock className="w-3.5 h-3.5 shrink-0" />
           <span>15 günlük ücretsiz deneme sürenizin bitmesine <strong>{remainingDays} gün</strong> kaldı.</span>
           <button
             onClick={() => setIsSubscriptionModalOpen(true)}
-            className="ml-2 underline hover:text-black cursor-pointer"
+            className="underline hover:text-black cursor-pointer whitespace-nowrap"
           >
             Paket Seçenekleri
           </button>
@@ -261,17 +261,17 @@ function MainApp() {
 
       {/* Footer */}
       <footer className="bg-white border-t border-slate-200 py-6 text-xs text-slate-500 no-print">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 sm:gap-2">
             <span className="font-bold text-slate-800">testimgeldi</span>
-            <span>—</span>
+            <span className="hidden sm:inline">—</span>
             <span>Online Optik Okuma ve Sınav Değerlendirme Sistemi · testimgeldi.com</span>
           </div>
-          <div className="flex items-center gap-4 text-[11px] text-slate-400">
+          <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 text-[11px] text-slate-400">
             <span>Standart OMR & A4 Optik Form Şablonları</span>
-            <span>·</span>
+            <span aria-hidden="true">·</span>
             <span>SuperAdmin: {isSuperAdmin ? 'Aktif' : 'Korunuyor'}</span>
-            <span>·</span>
+            <span aria-hidden="true">·</span>
             <span>{new Date().getFullYear()}</span>
           </div>
         </div>

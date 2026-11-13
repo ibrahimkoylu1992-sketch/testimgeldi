@@ -500,21 +500,21 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           </div>
 
           {/* Footer actions */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-between gap-3">
+          <div className="pt-4 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
             <span className="text-[11px] text-slate-400">
               testimgeldi v2.4 · Güvenli Profil Yönetimi
             </span>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg font-medium cursor-pointer"
+                className="w-full sm:w-auto min-h-[40px] px-4 py-2 text-slate-700 hover:bg-slate-100 rounded-lg font-medium cursor-pointer"
               >
                 Vazgeç
               </button>
               <button
                 type="submit"
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm flex items-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto min-h-[42px] px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Check className="w-4 h-4" />
                 Profili & Tercihleri Kaydet

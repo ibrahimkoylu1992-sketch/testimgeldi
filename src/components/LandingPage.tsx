@@ -25,45 +25,46 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
     <div className="bg-slate-50 text-slate-900 min-h-screen flex flex-col font-sans">
       {/* Top Bar for Landing Page */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-2 sm:gap-8">
           {/* Brand */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold text-base sm:text-lg shadow-sm">
               tg
             </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900">
+            <span className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 whitespace-nowrap">
               testimgeldi
             </span>
           </div>
 
           {/* Links */}
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-            <a href="#features" className="hover:text-slate-900 transition-colors">Özellikler</a>
-            <a href="#how-it-works" className="hover:text-slate-900 transition-colors">Nasıl Çalışır?</a>
-            <a href="#packages" className="hover:text-slate-900 transition-colors">Paketler & Fiyatlar</a>
-            <a href="#faq" className="hover:text-slate-900 transition-colors">SSS</a>
+            <a href="#features" className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0">Özellikler</a>
+            <a href="#how-it-works" className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0">Nasıl Çalışır?</a>
+            <a href="#packages" className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0">Paketler & Fiyatlar</a>
+            <a href="#faq" className="hover:text-slate-900 transition-colors whitespace-nowrap shrink-0">SSS</a>
           </nav>
 
           {/* Actions */}
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
             <button
               onClick={() => onOpenAuth('login')}
-              className="px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors"
+              className="px-2.5 sm:px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 transition-colors whitespace-nowrap shrink-0 min-h-[40px] cursor-pointer"
             >
               Giriş Yap
             </button>
             <button
               onClick={() => onOpenAuth('register')}
-              className="px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm cursor-pointer"
+              className="px-3 sm:px-4 py-2 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-sm cursor-pointer whitespace-nowrap shrink-0 min-h-[40px]"
             >
-              15 Gün Ücretsiz Başla
+              <span className="sm:hidden">Ücretsiz Başla</span>
+              <span className="hidden sm:inline">15 Gün Ücretsiz Başla</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* HERO SECTION */}
-      <section className="relative pt-16 pb-20 md:pt-24 md:pb-28 overflow-hidden border-b border-slate-200 bg-gradient-to-b from-white to-slate-50">
+      <section className="relative pt-10 pb-14 sm:pt-16 sm:pb-20 md:pt-24 md:pb-28 overflow-hidden border-b border-slate-200 bg-gradient-to-b from-white to-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-semibold mb-6">
@@ -230,13 +231,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 md:gap-8 max-w-6xl mx-auto">
             {SUBSCRIPTION_PACKAGES.map((pkg, idx) => (
               <div
                 key={pkg.id}
-                className={`bg-white rounded-2xl border p-8 flex flex-col justify-between transition-all ${
+                className={`bg-white rounded-2xl border p-6 sm:p-8 flex flex-col justify-between transition-all relative ${
                   pkg.id === 'pack_premium_12m'
-                    ? 'border-indigo-600 shadow-xl relative ring-2 ring-indigo-600/20'
+                    ? 'border-indigo-600 shadow-xl ring-2 ring-indigo-600/20'
                     : 'border-slate-200 shadow-sm hover:shadow-md'
                 }`}
               >
@@ -360,10 +361,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-slate-900 text-slate-400 py-12 text-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+      <footer className="bg-slate-900 text-slate-400 py-10 sm:py-12 text-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
               tg
             </div>
             <div>
@@ -372,15 +373,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
-            <button onClick={() => onOpenAuth('login')} className="hover:text-white transition-colors cursor-pointer">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+            <button onClick={() => onOpenAuth('login')} className="hover:text-white transition-colors cursor-pointer min-h-[36px]">
               Öğretmen Girişi
             </button>
-            <button onClick={() => onOpenAuth('register')} className="hover:text-white transition-colors cursor-pointer">
+            <button onClick={() => onOpenAuth('register')} className="hover:text-white transition-colors cursor-pointer min-h-[36px]">
               15 Gün Ücretsiz Kayıt Ol
             </button>
-            <span>·</span>
-            <span className="text-slate-600">© 2026 testimgeldi.com</span>
+            <span className="hidden sm:inline">·</span>
+            <span className="text-slate-500">© 2026 testimgeldi.com</span>
           </div>
         </div>
       </footer>

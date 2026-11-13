@@ -88,14 +88,14 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs no-print overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-4xl w-full my-8 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 bg-slate-900/50 backdrop-blur-xs no-print overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-4xl w-full my-2 sm:my-8 max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-slate-900 text-base">
-                Öğrenci Optik Kağıdı İnceleme & Düzenleme
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 flex items-start sm:items-center justify-between gap-2 bg-slate-50 shrink-0">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="font-bold text-slate-900 text-sm sm:text-base">
+                Öğrenci Optik Kağıdı İnceleme
               </h3>
               <span className="text-xs font-mono font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded">
                 No: {studentNumber}
@@ -107,14 +107,14 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors cursor-pointer"
+            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Top summary stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 px-6 py-3 bg-slate-100/60 border-b border-slate-200 text-center text-xs">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 px-4 sm:px-6 py-3 bg-slate-100/60 border-b border-slate-200 text-center text-xs shrink-0">
           <div>
             <span className="text-slate-500 block text-[11px]">Genel Toplam Puan</span>
             <span className="font-bold text-slate-900 text-sm font-mono tabular-nums">
@@ -184,7 +184,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         )}
 
         {/* Content Body */}
-        <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 max-h-[60vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-12 gap-5 sm:gap-6 flex-1 min-h-0 overflow-y-auto">
           {/* Left: Scanned Optical Sheet Image / Preview */}
           <div className="md:col-span-5 space-y-3">
             <span className="text-xs font-semibold text-slate-700 block">
@@ -425,24 +425,24 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row sm:items-center justify-between gap-2.5 shrink-0">
           <button
             type="button"
             onClick={handleDelete}
-            className="text-xs text-rose-600 hover:text-rose-700 font-medium flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-rose-50 transition-colors"
+            className="w-full sm:w-auto min-h-[40px] justify-center text-xs text-rose-600 hover:text-rose-700 font-medium flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
           >
             <Trash2 className="w-3.5 h-3.5" />
             Sonucu Sil
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => {
                 onClose();
                 onOpenReportCard(result);
               }}
-              className="px-4 py-2 border border-slate-300 hover:bg-white text-slate-700 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 shadow-xs"
+              className="w-full sm:w-auto min-h-[40px] justify-center px-4 py-2 border border-slate-300 hover:bg-white text-slate-700 font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5 text-slate-500" />
               Öğrenci Karnesi Al
@@ -451,7 +451,7 @@ export const StudentDetailModal: React.FC<StudentDetailModalProps> = ({
             <button
               type="button"
               onClick={handleSave}
-              className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="w-full sm:w-auto min-h-[40px] justify-center px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <Save className="w-3.5 h-3.5" />
               Değişiklikleri Kaydet

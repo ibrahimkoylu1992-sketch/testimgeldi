@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { StorageService } from '../lib/storage';
 import { useToast } from './Toast';
 import { Printer, Plus, Trash2, Layers, Check, Download, School } from 'lucide-react';
+
+const A4_WIDTH_PX = 794;
 
 interface SheetSubjectSection {
   id: string;
@@ -55,6 +57,43 @@ export const BubbleSheetGenerator: React.FC = () => {
   const booklets = ['A', 'B', 'C', 'D'];
   const idDigits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
   const idColumns = 4;
+
+  // Responsive mobile fit scale for A4 optical sheet preview
+  const previewContainerRef = useRef<HTMLDivElement>(null);
+  const sheetInnerRef = useRef<HTMLDivElement>(null);
+  const [sheetFitScale, setSheetFitScale] = useState(1);
+  const [sheetNaturalHeight, setSheetNaturalHeight] = useState(1123);
+
+  useEffect(() => {
+    const container = previewContainerRef.current;
+    if (!container) return;
+
+    const updateScale = () => {
+      const available = container.clientWidth;
+      if (!available) return;
+      const computed = Math.min(1, Math.max(0.32, (available - 16) / A4_WIDTH_PX));
+      setSheetFitScale(Number(computed.toFixed(3)));
+    };
+
+    updateScale();
+    const ro = new ResizeObserver(updateScale);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const inner = sheetInnerRef.current;
+    if (!inner) return;
+
+    const updateHeight = () => {
+      if (inner.offsetHeight) setSheetNaturalHeight(inner.offsetHeight);
+    };
+
+    updateHeight();
+    const ro = new ResizeObserver(updateHeight);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [sections, layoutMode, showIdGrid, optionCount, examTitle, schoolName]);
 
   // Robust print function with isolated iframe
   const handlePrint = () => {
@@ -460,36 +499,36 @@ export const BubbleSheetGenerator: React.FC = () => {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8">
       {/* Control Panel */}
-      <div className="no-print bg-white rounded-xl border border-slate-200 p-6 mb-8 shadow-xs space-y-6">
+      <div className="no-print bg-white rounded-xl border border-slate-200 p-4 sm:p-6 mb-6 sm:mb-8 shadow-xs space-y-5 sm:space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Printer className="w-5 h-5 text-indigo-600" />
-              Çoklu Ders Optik Form Şablonu Oluşturucu & Yazdır
+            <h1 className="text-lg sm:text-xl font-bold text-slate-900 flex items-center gap-2">
+              <Printer className="w-5 h-5 text-indigo-600 shrink-0" />
+              <span>Çoklu Ders Optik Form Şablonu Oluşturucu &amp; Yazdır</span>
             </h1>
             <p className="text-xs text-slate-500 mt-1">
               Tek bir optik kağıda birden fazla ders (Matematik, Fizik, Türkçe vb.) ekleyerek A4 baskıya uygun çıktı alın.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 shrink-0">
             <button
               onClick={handleDownloadImage}
-              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer min-h-[42px]"
               title="Yüksek çözünürlüklü A4 PNG olarak doğrudan bilgisayarınıza indirin"
             >
-              <Download className="w-4 h-4" />
-              Optik Formu İndir (A4 PNG / PDF Baskı)
+              <Download className="w-4 h-4 shrink-0" />
+              <span>Optik Formu İndir (A4 PNG)</span>
             </button>
 
             <button
               onClick={handlePrint}
-              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer min-h-[42px]"
             >
-              <Printer className="w-4 h-4" />
-              Yazdır / PDF Olarak Kaydet
+              <Printer className="w-4 h-4 shrink-0" />
+              <span>Yazdır / PDF Olarak Kaydet</span>
             </button>
           </div>
         </div>
@@ -680,23 +719,51 @@ export const BubbleSheetGenerator: React.FC = () => {
       </div>
 
       {/* Printable Sheet Viewport */}
-      <div className="bg-slate-200 p-6 md:p-8 rounded-xl shadow-inner max-w-4xl mx-auto overflow-x-auto">
-        <div className="text-center text-xs text-slate-500 mb-3 no-print font-medium flex items-center justify-center gap-2">
-          <span>Aşağıdaki alan A4 baskı çıktısı önizlemesidir. Yazıcıdan çıktı alabilir veya yüksek çözünürlüklü indirebilirsiniz.</span>
+      <div
+        ref={previewContainerRef}
+        className="bg-slate-200 p-3 sm:p-6 md:p-8 rounded-xl shadow-inner max-w-4xl mx-auto overflow-hidden"
+      >
+        <div className="text-center text-xs text-slate-600 mb-3 no-print font-medium flex flex-wrap items-center justify-center gap-2">
+          <span>A4 Baskı Çıktısı Önizlemesi ({Math.round(sheetFitScale * 100)}% ekrana sığdırıldı) · Gerçek 210mm A4 basılır.</span>
         </div>
 
-        <div id="printable-optical-sheets" className="bg-white mx-auto shadow-xl p-8 space-y-8" style={{ width: '210mm' }}>
-          {layoutMode === 'double' ? (
-            <div className="space-y-6">
-              {renderSingleSheet(1)}
-              <div className="border-t-2 border-dashed border-slate-400 my-4 text-center text-[10px] text-slate-400 font-mono no-print">
-                ✂️ Buradan Kesiniz (2. Öğrenci Formu)
-              </div>
-              {renderSingleSheet(2)}
+        <div
+          className="mx-auto relative"
+          style={
+            Math.abs(sheetFitScale - 1) < 0.005
+              ? { width: '210mm' }
+              : {
+                  width: `${Math.round(A4_WIDTH_PX * sheetFitScale)}px`,
+                  height: `${Math.round(sheetNaturalHeight * sheetFitScale)}px`,
+                }
+          }
+        >
+          <div
+            ref={sheetInnerRef}
+            style={
+              Math.abs(sheetFitScale - 1) < 0.005
+                ? { width: '210mm' }
+                : {
+                    width: '210mm',
+                    transform: `scale(${sheetFitScale})`,
+                    transformOrigin: 'top left',
+                  }
+            }
+          >
+            <div id="printable-optical-sheets" className="bg-white shadow-xl p-8 space-y-8" style={{ width: '210mm' }}>
+              {layoutMode === 'double' ? (
+                <div className="space-y-6">
+                  {renderSingleSheet(1)}
+                  <div className="border-t-2 border-dashed border-slate-400 my-4 text-center text-[10px] text-slate-400 font-mono no-print">
+                    ✂️ Buradan Kesiniz (2. Öğrenci Formu)
+                  </div>
+                  {renderSingleSheet(2)}
+                </div>
+              ) : (
+                renderSingleSheet(1)
+              )}
             </div>
-          ) : (
-            renderSingleSheet(1)
-          )}
+          </div>
         </div>
       </div>
     </div>

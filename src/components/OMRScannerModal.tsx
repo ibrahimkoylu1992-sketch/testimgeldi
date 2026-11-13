@@ -336,14 +336,14 @@ export const OMRScannerModal: React.FC<OMRScannerModalProps> = ({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-200 px-6 pt-3 gap-6 text-xs font-medium">
+        <div className="flex border-b border-slate-200 px-4 sm:px-6 pt-3 gap-4 sm:gap-6 text-xs font-medium overflow-x-auto no-scrollbar shrink-0">
           <button
             type="button"
             onClick={() => {
               stopCamera();
               setActiveTab('upload');
             }}
-            className={`pb-3 transition-colors flex items-center gap-2 cursor-pointer ${
+            className={`pb-3 transition-colors flex items-center gap-2 cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === 'upload'
                 ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold'
                 : 'text-slate-500 hover:text-slate-800'
@@ -359,7 +359,7 @@ export const OMRScannerModal: React.FC<OMRScannerModalProps> = ({
               setActiveTab('camera');
               startCamera();
             }}
-            className={`pb-3 transition-colors flex items-center gap-2 cursor-pointer ${
+            className={`pb-3 transition-colors flex items-center gap-2 cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === 'camera'
                 ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold'
                 : 'text-slate-500 hover:text-slate-800'
@@ -375,7 +375,7 @@ export const OMRScannerModal: React.FC<OMRScannerModalProps> = ({
               stopCamera();
               setActiveTab('demo');
             }}
-            className={`pb-3 transition-colors flex items-center gap-2 cursor-pointer ${
+            className={`pb-3 transition-colors flex items-center gap-2 cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === 'demo'
                 ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold'
                 : 'text-slate-500 hover:text-slate-800'
@@ -387,7 +387,7 @@ export const OMRScannerModal: React.FC<OMRScannerModalProps> = ({
         </div>
 
         {/* Content Body */}
-        <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-5 sm:space-y-6 max-h-[70vh] overflow-y-auto">
           {/* TAB 1: FILE UPLOAD */}
           {activeTab === 'upload' && (
             <div className="space-y-4">
@@ -594,12 +594,12 @@ export const OMRScannerModal: React.FC<OMRScannerModalProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
           <div className="text-xs text-slate-500">
             {doneCount > 0 && `${doneCount} kağıt anında sisteme aktarıldı.`}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 ml-auto">
             <button
               type="button"
               onClick={handleClose}

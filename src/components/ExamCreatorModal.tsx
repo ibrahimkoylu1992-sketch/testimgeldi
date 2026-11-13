@@ -325,24 +325,24 @@ export const ExamCreatorModal: React.FC<ExamCreatorModalProps> = ({
     .reduce((sum, val) => sum + (Number(val) || 0), 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs no-print overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-3xl w-full my-8 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 bg-slate-900/50 backdrop-blur-xs no-print overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-3xl w-full my-2 sm:my-8 max-h-[94vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center">
+        <div className="px-4 sm:px-6 py-3.5 sm:py-4 border-b border-slate-100 flex items-center justify-between gap-2 bg-slate-50/50 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0">
               <FileText className="w-4 h-4" />
             </div>
-            <div>
-              <h3 className="font-bold text-slate-900 text-base">Yeni Sınav / Test Oluştur</h3>
-              <p className="text-xs text-slate-500">
+            <div className="min-w-0">
+              <h3 className="font-bold text-slate-900 text-sm sm:text-base truncate">Yeni Sınav / Test Oluştur</h3>
+              <p className="text-[11px] sm:text-xs text-slate-500 truncate">
                 Özel branş ve sınıflarınızı tanımlayın, puanlama ve cevap anahtarı ayarlayın.
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors cursor-pointer"
+            className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -350,7 +350,7 @@ export const ExamCreatorModal: React.FC<ExamCreatorModalProps> = ({
 
         {/* Subscription Expired Warning */}
         {!isSubscriptionActive && currentUser?.role === 'teacher' && (
-          <div className="px-6 py-3 bg-rose-50 border-b border-rose-200 flex items-center justify-between text-xs text-rose-800">
+          <div className="px-4 sm:px-6 py-3 bg-rose-50 border-b border-rose-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-rose-800 shrink-0">
             <div className="flex items-center gap-2 font-medium">
               <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
               <span>15 günlük deneme süreniz sona ermiştir. Yeni sınav kaydetmek için paket seçiniz.</span>
@@ -358,14 +358,14 @@ export const ExamCreatorModal: React.FC<ExamCreatorModalProps> = ({
             <button
               type="button"
               onClick={onOpenSubscriptionModal}
-              className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded shadow-xs"
+              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded shadow-xs self-start sm:self-auto shrink-0 cursor-pointer"
             >
               Paketleri İncele
             </button>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-5 sm:space-y-6 flex-1 min-h-0 overflow-y-auto">
           {/* Sınav Başlığı */}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -383,7 +383,7 @@ export const ExamCreatorModal: React.FC<ExamCreatorModalProps> = ({
 
           {/* Sınav Formatı: Tek Ders vs Çoklu Ders */}
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
               <div>
                 <span className="text-xs font-bold text-slate-800 block">Sınav / Optik Türü</span>
                 <span className="text-[11px] text-slate-500">
@@ -392,14 +392,14 @@ export const ExamCreatorModal: React.FC<ExamCreatorModalProps> = ({
                     : 'Tek Ders Modu: Standart tek branş sınavı.'}
                 </span>
               </div>
-              <div className="flex bg-white rounded-lg border border-slate-300 p-0.5 shadow-xs">
+              <div className="flex bg-white rounded-lg border border-slate-300 p-0.5 shadow-xs self-start sm:self-auto w-full sm:w-auto">
                 <button
                   type="button"
                   onClick={() => {
                     setIsMultiSubject(false);
                     handleQuestionCountChange(20);
                   }}
-                  className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
+                  className={`flex-1 sm:flex-none px-3 py-1.5 sm:py-1 text-xs font-semibold rounded cursor-pointer transition-colors ${
                     !isMultiSubject
                       ? 'bg-indigo-600 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -413,14 +413,14 @@ export const ExamCreatorModal: React.FC<ExamCreatorModalProps> = ({
                     setIsMultiSubject(true);
                     handleQuestionCountChange(sections.reduce((s, x) => s + x.questionCount, 0));
                   }}
-                  className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-colors flex items-center gap-1.5 ${
+                  className={`flex-1 sm:flex-none px-3 py-1.5 sm:py-1 text-xs font-semibold rounded cursor-pointer transition-colors flex items-center justify-center gap-1.5 ${
                     isMultiSubject
                       ? 'bg-indigo-600 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
                   <Layers className="w-3.5 h-3.5" />
-                  Çoklu Ders (Mat+Fizik vb.)
+                  <span>Çoklu Ders</span>
                 </button>
               </div>
             </div>
@@ -994,11 +994,11 @@ export const ExamCreatorModal: React.FC<ExamCreatorModalProps> = ({
             </div>
 
             {/* Giriş Yöntemi Sekmeleri */}
-            <div className="flex border-b border-slate-200 mb-4 gap-4 text-xs font-medium">
+            <div className="flex border-b border-slate-200 mb-4 gap-4 text-xs font-medium overflow-x-auto no-scrollbar">
               <button
                 type="button"
                 onClick={() => setInputMethod('grid')}
-                className={`pb-2 transition-colors cursor-pointer ${
+                className={`pb-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                   inputMethod === 'grid'
                     ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold'
                     : 'text-slate-500 hover:text-slate-800'
@@ -1009,18 +1009,18 @@ export const ExamCreatorModal: React.FC<ExamCreatorModalProps> = ({
               <button
                 type="button"
                 onClick={() => setInputMethod('text')}
-                className={`pb-2 transition-colors cursor-pointer ${
+                className={`pb-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                   inputMethod === 'text'
                     ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold'
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                <span>Hızlı Metin Yapıştır (1-A, 2-B, 3-D)</span>
+                <span>Hızlı Metin Yapıştır (1-A, 2-B)</span>
               </button>
               <button
                 type="button"
                 onClick={() => setInputMethod('upload')}
-                className={`pb-2 transition-colors cursor-pointer flex items-center gap-1.5 ${
+                className={`pb-2 transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
                   inputMethod === 'upload'
                     ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold'
                     : 'text-slate-500 hover:text-slate-800'
@@ -1185,17 +1185,17 @@ export const ExamCreatorModal: React.FC<ExamCreatorModalProps> = ({
           </div>
 
           {/* Footer Actions */}
-          <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2.5 sm:gap-3">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              className="w-full sm:w-auto min-h-[40px] px-4 py-2 text-xs font-medium text-slate-700 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
             >
               İptal
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors flex items-center gap-2 cursor-pointer"
+              className="w-full sm:w-auto min-h-[42px] px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
               <Check className="w-4 h-4" />
               Sınavı Oluştur & Kaydet

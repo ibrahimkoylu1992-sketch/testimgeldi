@@ -76,44 +76,44 @@ export const ExamListView: React.FC<ExamListViewProps> = ({
   const subjects = ['all', ...Array.from(new Set(userExams.map((e) => e.subject)))];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8">
       {/* Hero Welcome Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 sm:p-8 text-white shadow-xl relative overflow-hidden">
         <div className="relative z-10 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-xs font-semibold mb-3">
-            <Sparkles className="w-3.5 h-3.5" />
-            Yapay Zeka Destekli Optik Sınav Değerlendirme
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-300 text-[11px] sm:text-xs font-semibold mb-3">
+            <Sparkles className="w-3.5 h-3.5 shrink-0" />
+            <span>Yapay Zeka Destekli Optik Sınav Değerlendirme</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-2">
+          <h1 className="text-xl sm:text-3xl font-extrabold tracking-tight text-white mb-2">
             testimgeldi ile Sınav Kağıtlarını Saniyeler İçinde Okuyun
           </h1>
-          <p className="text-slate-300 text-sm leading-relaxed mb-6">
+          <p className="text-slate-300 text-xs sm:text-sm leading-relaxed mb-5 sm:mb-6">
             Öğretmenler için optik form oluşturucu, cevap anahtarı tanımlama ve telefon kamerasıyla
             veya tarayıcıyla otomatik kağıt değerlendirme sistemi.
           </p>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2.5 sm:gap-3">
             <button
               onClick={onOpenCreateExam}
-              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+              className="w-full sm:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm min-h-[42px] cursor-pointer"
             >
-              <Plus className="w-4 h-4" />
-              Yeni Sınav Oluştur
+              <Plus className="w-4 h-4 shrink-0" />
+              <span>Yeni Sınav Oluştur</span>
             </button>
             {onNavigateToQuizBuilder && (
               <button
                 onClick={onNavigateToQuizBuilder}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+                className="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 shadow-sm min-h-[42px] cursor-pointer"
               >
-                <Crop className="w-4 h-4" />
-                Test & Quiz Kağıdı Hazırla
+                <Crop className="w-4 h-4 shrink-0" />
+                <span>Test & Quiz Kağıdı Hazırla</span>
               </button>
             )}
             <button
               onClick={onNavigateToBubbleSheets}
-              className="px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs rounded-lg border border-white/15 transition-colors flex items-center gap-2"
+              className="w-full sm:w-auto px-5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs rounded-lg border border-white/15 transition-colors flex items-center justify-center gap-2 min-h-[42px] cursor-pointer"
             >
-              <Printer className="w-4 h-4" />
-              Optik Form Şablonu Yazdır
+              <Printer className="w-4 h-4 shrink-0" />
+              <span>Optik Form Şablonu Yazdır</span>
             </button>
           </div>
         </div>
@@ -206,7 +206,7 @@ export const ExamListView: React.FC<ExamListViewProps> = ({
                   </span>
                   <button
                     onClick={(e) => handleDelete(e, exam)}
-                    className="p-1 text-slate-300 hover:text-rose-600 rounded transition-colors"
+                    className="p-2 -mr-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                     title="Sınavı Sil"
                   >
                     <Trash2 className="w-4 h-4" />

@@ -27,24 +27,24 @@ export const StudentReportCardModal: React.FC<StudentReportCardModalProps> = ({
     exam.booklets.find((b) => b.booklet === result.booklet)?.answers || exam.booklets[0]?.answers || {};
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full my-8 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-2 sm:p-4 bg-slate-900/50 backdrop-blur-xs overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-2xl border border-slate-200 max-w-2xl w-full my-2 sm:my-8 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
         {/* Modal Controls (no-print) */}
-        <div className="no-print px-6 py-3 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-          <span className="text-xs font-bold text-slate-800">
+        <div className="no-print px-4 sm:px-6 py-3 border-b border-slate-200 flex items-center justify-between gap-2 bg-slate-50">
+          <span className="text-xs font-bold text-slate-800 truncate">
             Öğrenci Sınav Sonuç Belgesi (Karne)
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handlePrint}
-              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 shadow-sm"
+              className="px-3 py-1.5 min-h-[36px] bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
             >
               <Printer className="w-3.5 h-3.5" />
-              Yazdır / PDF Kaydet
+              <span>Yazdır / PDF</span>
             </button>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -52,14 +52,14 @@ export const StudentReportCardModal: React.FC<StudentReportCardModalProps> = ({
         </div>
 
         {/* Printable Report Card Sheet */}
-        <div className="p-8 print:p-4 text-slate-900">
+        <div className="p-4 sm:p-8 print:p-4 text-slate-900">
           {/* Header */}
-          <div className="text-center pb-4 border-b-2 border-slate-900 mb-6">
-            <div className="flex items-center justify-between">
+          <div className="text-center pb-4 border-b-2 border-slate-900 mb-5 sm:mb-6">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-1.5">
               <span className="text-xs font-mono font-bold tracking-widest text-indigo-600">
                 testimgeldi OMR
               </span>
-              <h1 className="text-lg font-extrabold uppercase tracking-tight text-slate-900">
+              <h1 className="text-base sm:text-lg font-extrabold uppercase tracking-tight text-slate-900">
                 SINAV SONUÇ BELGESİ
               </h1>
               <span className="text-xs font-mono text-slate-500">
@@ -70,7 +70,7 @@ export const StudentReportCardModal: React.FC<StudentReportCardModalProps> = ({
           </div>
 
           {/* Student & Exam Details Box */}
-          <div className="grid grid-cols-2 gap-4 p-4 border border-slate-300 bg-slate-50/50 rounded-lg mb-6 text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3.5 sm:p-4 border border-slate-300 bg-slate-50/50 rounded-lg mb-5 sm:mb-6 text-xs">
             <div className="space-y-1">
               <div>
                 <span className="text-slate-500">Öğrenci Adı Soyadı:</span>{' '}
@@ -109,8 +109,8 @@ export const StudentReportCardModal: React.FC<StudentReportCardModalProps> = ({
           </div>
 
           {/* Scores KPI Cards */}
-          <div className="grid grid-cols-5 gap-3 mb-6 text-center">
-            <div className="p-3 border border-indigo-200 bg-indigo-50/40 rounded-lg">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3 mb-5 sm:mb-6 text-center">
+            <div className="col-span-2 sm:col-span-1 p-3 border border-indigo-200 bg-indigo-50/40 rounded-lg">
               <span className="text-[10px] uppercase font-bold text-indigo-700 block mb-0.5">
                 Toplam Puan
               </span>
@@ -185,8 +185,8 @@ export const StudentReportCardModal: React.FC<StudentReportCardModalProps> = ({
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-800 mb-2 flex items-center gap-1.5">
                 <span>Ders Bazlı Başarı ve Net Çizelgesi</span>
               </h3>
-              <div className="border border-slate-300 rounded-lg overflow-hidden text-xs">
-                <table className="w-full text-left border-collapse">
+              <div className="border border-slate-300 rounded-lg overflow-x-auto text-xs">
+                <table className="w-full min-w-[540px] text-left border-collapse">
                   <thead>
                     <tr className="bg-slate-100 border-b border-slate-300 font-bold text-slate-700 text-[11px]">
                       <th className="py-2 px-3">Ders / Branş</th>
@@ -270,8 +270,8 @@ export const StudentReportCardModal: React.FC<StudentReportCardModalProps> = ({
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
               Soru Bazlı Yanıt ve Çözüm Tablosu
             </h3>
-            <div className="border border-slate-200 rounded-lg overflow-hidden text-xs">
-              <table className="w-full text-left border-collapse">
+            <div className="border border-slate-200 rounded-lg overflow-x-auto text-xs">
+              <table className="w-full min-w-[460px] text-left border-collapse">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-200 font-semibold text-slate-700">
                     <th className="py-2 px-3">Soru No</th>
@@ -386,7 +386,7 @@ export const StudentReportCardModal: React.FC<StudentReportCardModalProps> = ({
           </div>
 
           {/* Footer note */}
-          <div className="mt-8 pt-4 border-t border-slate-200 flex items-center justify-between text-[10px] text-slate-400 font-mono">
+          <div className="mt-8 pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] text-slate-400 font-mono text-center sm:text-left">
             <span>testimgeldi Optik Okuma Sistemi · testimgeldi.com</span>
             <span>Öğretmen İmzası: ____________________</span>
           </div>

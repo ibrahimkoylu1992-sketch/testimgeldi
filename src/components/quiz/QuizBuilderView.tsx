@@ -304,15 +304,15 @@ export const QuizBuilderView: React.FC<QuizBuilderViewProps> = ({
   const totalPoints = activeQuiz.questions.reduce((sum, q) => sum + (q.points || 0), 0);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-5">
+    <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-5">
       {/* Top Hero Banner */}
-      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 sm:p-6 text-white shadow-xl relative overflow-hidden no-print">
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-4 sm:p-6 text-white shadow-xl relative overflow-hidden no-print">
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="space-y-1">
             <span className="text-xs font-semibold text-indigo-300 block">
               Test &amp; Quiz Kağıdı Hazırlayıcı
             </span>
-            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-white">
+            <h1 className="text-lg sm:text-2xl font-extrabold tracking-tight text-white">
               MEB Standardında 2 Sütunlu Sınav Kağıdı Oluşturun
             </h1>
             <p className="text-slate-300 text-xs sm:text-sm max-w-2xl leading-relaxed">
@@ -320,11 +320,11 @@ export const QuizBuilderView: React.FC<QuizBuilderViewProps> = ({
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">
             <button
               type="button"
               onClick={() => setIsQuestionBankOpen(true)}
-              className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              className="w-full sm:w-auto px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 min-h-[42px]"
             >
               <BookOpen className="w-4 h-4" />
               <span>Soru Bankası</span>
@@ -333,7 +333,7 @@ export const QuizBuilderView: React.FC<QuizBuilderViewProps> = ({
             <button
               type="button"
               onClick={() => setIsPdfCropperOpen(true)}
-              className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-sm flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              className="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-sm flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 min-h-[42px]"
             >
               <Crop className="w-4 h-4" />
               <span>PDF&apos;den Soru Kırp</span>
@@ -345,7 +345,7 @@ export const QuizBuilderView: React.FC<QuizBuilderViewProps> = ({
                 setEditingQuestion(null);
                 setIsManualQuestionModalOpen(true);
               }}
-              className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs rounded-xl border border-white/20 flex items-center gap-2 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+              className="w-full sm:w-auto px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs rounded-xl border border-white/20 flex items-center justify-center gap-2 transition-colors cursor-pointer whitespace-nowrap shrink-0 min-h-[42px]"
             >
               <Plus className="w-4 h-4" />
               <span>Manuel Soru Yaz</span>
@@ -355,13 +355,13 @@ export const QuizBuilderView: React.FC<QuizBuilderViewProps> = ({
       </div>
 
       {/* Main Controls Bar */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-wrap items-center justify-between gap-3 no-print">
+      <div className="bg-white rounded-xl border border-slate-200 p-3.5 sm:p-4 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-3 no-print">
         {/* Test Name & Metadata */}
         <div className="flex items-center gap-3 min-w-0">
           <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold shrink-0">
             <FileQuestion className="w-4 h-4" />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <input
               type="text"
               value={activeQuiz.settings.examTitle}
@@ -369,7 +369,7 @@ export const QuizBuilderView: React.FC<QuizBuilderViewProps> = ({
               className="font-bold text-slate-900 text-sm border-b border-transparent hover:border-slate-300 focus:border-indigo-500 focus:outline-none px-1 py-0.5 w-full max-w-md"
               title="Sınav başlığını düzenlemek için tıklayın"
             />
-            <div className="flex items-center gap-2 text-xs text-slate-500 px-1 tabular-nums">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-slate-500 px-1 tabular-nums">
               <span>{activeQuiz.questions.length} Soru</span>
               <span aria-hidden="true">·</span>
               <span>Toplam {totalPoints} Puan</span>
@@ -385,7 +385,7 @@ export const QuizBuilderView: React.FC<QuizBuilderViewProps> = ({
           <button
             type="button"
             onClick={() => setIsQuestionManagerOpen(true)}
-            className="px-3.5 py-2 text-xs font-bold rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+            className="flex-1 sm:flex-none justify-center px-3.5 py-2 text-xs font-bold rounded-lg border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 min-h-[40px]"
           >
             <Layers className="w-3.5 h-3.5" />
             <span>Soru Listesi ({activeQuiz.questions.length})</span>
@@ -395,7 +395,7 @@ export const QuizBuilderView: React.FC<QuizBuilderViewProps> = ({
           <button
             type="button"
             onClick={() => setShowSettingsPanel(!showSettingsPanel)}
-            className={`px-3 py-2 text-xs font-semibold rounded-lg border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+            className={`flex-1 sm:flex-none justify-center px-3 py-2 text-xs font-semibold rounded-lg border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 min-h-[40px] ${
               showSettingsPanel
                 ? 'bg-slate-900 border-slate-900 text-white'
                 : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -409,7 +409,7 @@ export const QuizBuilderView: React.FC<QuizBuilderViewProps> = ({
           <button
             type="button"
             onClick={() => setShowAnswerKey(!showAnswerKey)}
-            className={`px-3 py-2 text-xs font-bold rounded-lg border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 ${
+            className={`flex-1 sm:flex-none justify-center px-3 py-2 text-xs font-bold rounded-lg border transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0 min-h-[40px] ${
               showAnswerKey
                 ? 'bg-emerald-600 border-emerald-600 text-white shadow-xs'
                 : 'bg-white border-slate-300 text-slate-700 hover:bg-slate-50'
@@ -424,7 +424,7 @@ export const QuizBuilderView: React.FC<QuizBuilderViewProps> = ({
           <button
             type="button"
             onClick={handleConvertToExam}
-            className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            className="flex-1 sm:flex-none justify-center px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 min-h-[40px]"
             title="Bu testi testimgeldi optik okuma sistemine aktarır"
           >
             <Scan className="w-3.5 h-3.5" />
@@ -435,7 +435,7 @@ export const QuizBuilderView: React.FC<QuizBuilderViewProps> = ({
           <button
             type="button"
             onClick={handlePrint}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0"
+            className="w-full sm:w-auto justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-lg shadow-sm flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 min-h-[40px]"
           >
             <Printer className="w-3.5 h-3.5" />
             <span>Yazdır / PDF Kaydet</span>
@@ -445,7 +445,7 @@ export const QuizBuilderView: React.FC<QuizBuilderViewProps> = ({
           <button
             type="button"
             onClick={handleLoadSampleQuiz}
-            className="p-2 text-xs text-slate-500 hover:text-slate-800 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer shrink-0"
+            className="p-2 text-xs text-slate-500 hover:text-slate-800 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer shrink-0 min-h-[40px] min-w-[40px] flex items-center justify-center"
             title="Örnek Matematik testini yükle"
           >
             <Sparkles className="w-4 h-4 text-amber-500" />
@@ -455,7 +455,7 @@ export const QuizBuilderView: React.FC<QuizBuilderViewProps> = ({
           <button
             type="button"
             onClick={handleCreateNewBlankQuiz}
-            className="p-2 text-xs text-slate-500 hover:text-slate-800 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer shrink-0"
+            className="p-2 text-xs text-slate-500 hover:text-slate-800 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer shrink-0 min-h-[40px] min-w-[40px] flex items-center justify-center"
             title="Yeni boş sınav kağıdı aç"
           >
             <Plus className="w-4 h-4" />

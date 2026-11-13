@@ -371,31 +371,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       {/* Top Banner */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-200">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
+        <div className="flex items-start sm:items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
             <Shield className="w-6 h-6" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
                 {isSuperAdmin ? 'SuperAdmin Merkezi Yönetim Paneli' : 'Yönetici (Admin) Paneli'}
               </h1>
-              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded ${
+              <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded shrink-0 ${
                 isSuperAdmin ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-indigo-100 text-indigo-900'
               }`}>
                 {isSuperAdmin ? '👑 SuperAdmin' : 'Admin'}
               </span>
             </div>
-            <p className="text-xs text-slate-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5 truncate">
               Giriş Yapan: <strong>{currentUser?.name}</strong> ({currentUser?.email})
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <button
             onClick={onNavigateToExams}
-            className="px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-lg transition-colors"
+            className="w-full sm:w-auto min-h-[40px] px-4 py-2 border border-slate-300 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-lg transition-colors cursor-pointer"
           >
             Sınavlara Dön
           </button>
@@ -457,11 +457,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       {/* Tabs */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
-        <div className="border-b border-slate-200 px-6 flex items-center justify-between">
-          <div className="flex gap-6 text-xs font-semibold">
+        <div className="border-b border-slate-200 px-3 sm:px-6 overflow-x-auto no-scrollbar">
+          <div className="flex gap-4 sm:gap-6 text-xs font-semibold min-w-max">
             <button
               onClick={() => setSelectedTab('requests')}
-              className={`py-4 transition-colors flex items-center gap-2 ${
+              className={`py-3.5 sm:py-4 transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
                 selectedTab === 'requests'
                   ? 'border-b-2 border-indigo-600 text-indigo-600'
                   : 'text-slate-500 hover:text-slate-800'
@@ -473,19 +473,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             <button
               onClick={() => setSelectedTab('users')}
-              className={`py-4 transition-colors flex items-center gap-2 ${
+              className={`py-3.5 sm:py-4 transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
                 selectedTab === 'users'
                   ? 'border-b-2 border-indigo-600 text-indigo-600'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               <Users className="w-4 h-4" />
-              <span>Öğretmen, Öğrenci & Admin Yönetimi ({users.length})</span>
+              <span>Kullanıcı Yönetimi ({users.length})</span>
             </button>
 
             <button
               onClick={() => setSelectedTab('exams')}
-              className={`py-4 transition-colors flex items-center gap-2 ${
+              className={`py-3.5 sm:py-4 transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
                 selectedTab === 'exams'
                   ? 'border-b-2 border-indigo-600 text-indigo-600'
                   : 'text-slate-500 hover:text-slate-800'
@@ -497,27 +497,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             <button
               onClick={() => setSelectedTab('email-smtp')}
-              className={`py-4 transition-colors flex items-center gap-2 ${
+              className={`py-3.5 sm:py-4 transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
                 selectedTab === 'email-smtp'
                   ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               <Mail className="w-4 h-4 text-indigo-500" />
-              <span>E-Posta & SMTP Ayarları</span>
+              <span>E-Posta & SMTP</span>
               <span className={`w-2 h-2 rounded-full ${smtpConfigured ? 'bg-emerald-500' : 'bg-amber-400'}`} />
             </button>
 
             <button
               onClick={() => setSelectedTab('tickets')}
-              className={`py-4 transition-colors flex items-center gap-2 ${
+              className={`py-3.5 sm:py-4 transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
                 selectedTab === 'tickets'
                   ? 'border-b-2 border-indigo-600 text-indigo-600 font-bold'
                   : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               <MessageSquare className="w-4 h-4 text-rose-500" />
-              <span>Sorun & İstek Bildirimleri ({tickets.length})</span>
+              <span>Destek Bildirimleri ({tickets.length})</span>
               {tickets.filter((t) => t.status === 'pending').length > 0 && (
                 <span className="w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] flex items-center justify-center font-bold">
                   {tickets.filter((t) => t.status === 'pending').length}
@@ -527,7 +527,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
             <button
               onClick={() => setSelectedTab('settings')}
-              className={`py-4 transition-colors flex items-center gap-2 ${
+              className={`py-3.5 sm:py-4 transition-colors flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer ${
                 selectedTab === 'settings'
                   ? 'border-b-2 border-indigo-600 text-indigo-600'
                   : 'text-slate-500 hover:text-slate-800'
@@ -632,7 +632,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         {selectedTab === 'users' && (
           <div>
             {/* Filter bar */}
-            <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <div className="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
               <div className="relative w-full sm:w-80">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                 <input
@@ -640,17 +640,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   placeholder="İsim, e-posta, okul veya öğrenci no ara..."
-                  className="w-full pl-9 pr-3 py-1.5 border border-slate-300 rounded-lg bg-white focus:outline-none"
+                  className="w-full pl-9 pr-3 py-2 border border-slate-300 rounded-lg bg-white focus:outline-none min-h-[38px]"
                 />
               </div>
 
               {/* Role filter */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex flex-wrap items-center gap-1.5">
                 {(['all', 'teacher', 'student', 'admin', 'superadmin'] as const).map((r) => (
                   <button
                     key={r}
                     onClick={() => setRoleFilter(r)}
-                    className={`px-2.5 py-1 rounded text-xs font-semibold capitalize ${
+                    className={`px-2.5 py-1.5 rounded text-xs font-semibold capitalize cursor-pointer ${
                       roleFilter === r
                         ? 'bg-slate-900 text-white'
                         : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
@@ -835,29 +835,29 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         {/* TAB 3: EXAMS AUDIT */}
         {selectedTab === 'exams' && (
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             <div className="space-y-3">
               {exams.map((exam) => (
                 <div
                   key={exam.id}
                   onClick={() => onSelectExam(exam)}
-                  className="p-4 rounded-lg border border-slate-200 hover:border-indigo-400 transition-all flex items-center justify-between cursor-pointer group bg-slate-50/40"
+                  className="p-4 rounded-lg border border-slate-200 hover:border-indigo-400 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer group bg-slate-50/40"
                 >
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
                       <span className="text-xs font-bold text-indigo-600 uppercase">
                         {exam.subject} · {exam.gradeLevel}
                       </span>
                       <span className="text-xs text-slate-400">· Oluşturan: {exam.creatorName}</span>
                     </div>
-                    <h4 className="font-bold text-slate-900 text-sm group-hover:text-indigo-600">
+                    <h4 className="font-bold text-slate-900 text-sm group-hover:text-indigo-600 truncate">
                       {exam.title}
                     </h4>
                   </div>
 
-                  <div className="flex items-center gap-6 text-xs text-slate-500">
+                  <div className="flex flex-wrap items-center justify-between sm:justify-end gap-4 sm:gap-6 text-xs text-slate-500 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200/70 shrink-0">
                     <div>
-                      <span>Kağıt Sayısı:</span>{' '}
+                      <span>Kağıt:</span>{' '}
                       <strong className="font-mono text-slate-800">{exam.totalPaperCount}</strong>
                     </div>
                     <div>
@@ -878,11 +878,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
         {/* TAB: EMAIL & SMTP SETTINGS */}
         {selectedTab === 'email-smtp' && (
-          <div className="p-6 max-w-3xl mx-auto space-y-6">
+          <div className="p-4 sm:p-6 max-w-3xl mx-auto space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-200 gap-3">
               <div>
                 <h3 className="font-bold text-slate-900 text-base flex items-center gap-2">
-                  <Mail className="w-5 h-5 text-indigo-600" />
+                  <Mail className="w-5 h-5 text-indigo-600 shrink-0" />
                   <span>Canlı E-Posta & SMTP Gönderim Yapılandırması</span>
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
@@ -890,7 +890,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <span className={`px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 ${
                   smtpConfigured
                     ? 'bg-emerald-50 text-emerald-700 border border-emerald-300'
@@ -903,7 +903,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
             </div>
 
             {/* Provider Selector */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <button
                 type="button"
                 onClick={() => setSmtpProvider('gmail')}
@@ -1105,10 +1105,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
               </div>
 
               {/* Status Filters */}
-              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg text-xs self-start sm:self-auto">
+              <div className="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1 rounded-lg text-xs self-start sm:self-auto max-w-full overflow-x-auto no-scrollbar">
                 <button
                   onClick={() => setTicketFilter('all')}
-                  className={`px-3 py-1.5 rounded-md font-semibold transition-colors ${
+                  className={`px-3 py-1.5 rounded-md font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     ticketFilter === 'all'
                       ? 'bg-white text-slate-900 shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -1118,7 +1118,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </button>
                 <button
                   onClick={() => setTicketFilter('pending')}
-                  className={`px-3 py-1.5 rounded-md font-semibold transition-colors flex items-center gap-1 ${
+                  className={`px-3 py-1.5 rounded-md font-semibold transition-colors flex items-center gap-1 whitespace-nowrap shrink-0 cursor-pointer ${
                     ticketFilter === 'pending'
                       ? 'bg-amber-500 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -1131,7 +1131,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </button>
                 <button
                   onClick={() => setTicketFilter('in_progress')}
-                  className={`px-3 py-1.5 rounded-md font-semibold transition-colors ${
+                  className={`px-3 py-1.5 rounded-md font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     ticketFilter === 'in_progress'
                       ? 'bg-indigo-600 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'
@@ -1141,7 +1141,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </button>
                 <button
                   onClick={() => setTicketFilter('resolved')}
-                  className={`px-3 py-1.5 rounded-md font-semibold transition-colors ${
+                  className={`px-3 py-1.5 rounded-md font-semibold transition-colors whitespace-nowrap shrink-0 cursor-pointer ${
                     ticketFilter === 'resolved'
                       ? 'bg-emerald-600 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900'

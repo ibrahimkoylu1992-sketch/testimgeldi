@@ -538,10 +538,10 @@ export const PdfQuestionCropperModal: React.FC<PdfQuestionCropperModalProps> = (
         </div>
 
         {/* Toolbar: Upload, Paste, Presets, Zoom */}
-        <div className="px-5 py-2.5 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs shrink-0">
+        <div className="px-3 sm:px-5 py-2.5 bg-white border-b border-slate-200 flex flex-wrap items-center justify-between gap-2.5 text-xs shrink-0">
           {/* File & Clipboard actions */}
           <div className="flex items-center gap-2 flex-wrap">
-            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-xs cursor-pointer transition-colors">
+            <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-xs cursor-pointer transition-colors whitespace-nowrap">
               <Upload className="w-3.5 h-3.5" />
               <span>PDF / Resim Yükle</span>
               <input
@@ -555,7 +555,7 @@ export const PdfQuestionCropperModal: React.FC<PdfQuestionCropperModalProps> = (
             <button
               type="button"
               onClick={handleClipboardButtonClick}
-              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg shadow-xs flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap"
               title="Windows Snipping Tool (Win+Shift+S) ile kopyaladığınız ekran görüntüsünü yapıştırın"
             >
               <Clipboard className="w-3.5 h-3.5" />
@@ -565,7 +565,7 @@ export const PdfQuestionCropperModal: React.FC<PdfQuestionCropperModalProps> = (
             <button
               type="button"
               onClick={loadSampleDocument}
-              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer"
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg border border-slate-200 transition-colors flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
             >
               <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
               <span>Örnek Şablon</span>
@@ -573,35 +573,35 @@ export const PdfQuestionCropperModal: React.FC<PdfQuestionCropperModalProps> = (
           </div>
 
           {/* Quick Presets for Fast 1-Click Cropping */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200">
-            <span className="text-[11px] font-bold text-slate-500 px-1.5">Hızlı Şablon:</span>
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 overflow-x-auto no-scrollbar max-w-full">
+            <span className="text-[11px] font-bold text-slate-500 px-1.5 whitespace-nowrap shrink-0">Hızlı Şablon:</span>
             <button
               onClick={() => applyPresetCrop('left_top')}
-              className="px-2 py-0.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-medium rounded border border-slate-200 text-[11px] transition-colors"
+              className="px-2 py-0.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-medium rounded border border-slate-200 text-[11px] transition-colors whitespace-nowrap shrink-0"
             >
               Sol Üst
             </button>
             <button
               onClick={() => applyPresetCrop('left_bottom')}
-              className="px-2 py-0.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-medium rounded border border-slate-200 text-[11px] transition-colors"
+              className="px-2 py-0.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-medium rounded border border-slate-200 text-[11px] transition-colors whitespace-nowrap shrink-0"
             >
               Sol Alt
             </button>
             <button
               onClick={() => applyPresetCrop('right_top')}
-              className="px-2 py-0.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-medium rounded border border-slate-200 text-[11px] transition-colors"
+              className="px-2 py-0.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-medium rounded border border-slate-200 text-[11px] transition-colors whitespace-nowrap shrink-0"
             >
               Sağ Üst
             </button>
             <button
               onClick={() => applyPresetCrop('right_bottom')}
-              className="px-2 py-0.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-medium rounded border border-slate-200 text-[11px] transition-colors"
+              className="px-2 py-0.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-medium rounded border border-slate-200 text-[11px] transition-colors whitespace-nowrap shrink-0"
             >
               Sağ Alt
             </button>
             <button
               onClick={() => applyPresetCrop('full_width')}
-              className="px-2 py-0.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-medium rounded border border-slate-200 text-[11px] transition-colors"
+              className="px-2 py-0.5 bg-white hover:bg-indigo-50 hover:text-indigo-600 text-slate-700 font-medium rounded border border-slate-200 text-[11px] transition-colors whitespace-nowrap shrink-0"
             >
               Tam Genişlik
             </button>

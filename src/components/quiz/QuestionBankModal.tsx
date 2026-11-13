@@ -264,7 +264,7 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
         </div>
 
         {/* Action Header: Results Count & Select All */}
-        <div className="px-5 py-2.5 bg-slate-950/40 border-b border-slate-800 flex items-center justify-between text-xs">
+        <div className="px-4 sm:px-5 py-2.5 bg-slate-950/40 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
           <div className="flex items-center gap-3 text-slate-400">
             <span>
               Toplam <strong className="text-white">{filteredQuestions.length}</strong> soru listeleniyor
@@ -275,10 +275,10 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={handleSelectAllFiltered}
-              className="px-2.5 py-1 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors flex items-center gap-1.5"
+              className="px-2.5 py-1.5 text-[11px] rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition-colors flex items-center gap-1.5 cursor-pointer"
             >
               <CheckCheck className="w-3.5 h-3.5" />
               {selectedIds.size === filteredQuestions.length && filteredQuestions.length > 0
@@ -288,10 +288,10 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
             {selectedIds.size > 0 && (
               <button
                 onClick={handleBatchAdd}
-                className="px-3 py-1 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors flex items-center gap-1.5 shadow-sm"
+                className="px-3 py-1.5 text-xs rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
-                Seçilen {selectedIds.size} Soruyu Teste Ekle
+                Seçilen {selectedIds.size} Soruyu Ekle
               </button>
             )}
           </div>
@@ -435,21 +435,21 @@ export const QuestionBankModal: React.FC<QuestionBankModalProps> = ({
         </div>
 
         {/* Modal Footer */}
-        <div className="px-5 py-3 border-t border-slate-800 bg-slate-950/70 flex items-center justify-between">
+        <div className="px-4 sm:px-5 py-3 border-t border-slate-800 bg-slate-950/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
           <div className="text-xs text-slate-400">
             İpucu: Soruların yanındaki kutucukları işaretleyerek topluca testinize ekleyebilirsiniz.
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-end gap-2.5">
             <button
               onClick={onClose}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 rounded-lg transition-colors"
+              className="px-4 py-2 min-h-[38px] bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 rounded-lg transition-colors cursor-pointer"
             >
               Kapat
             </button>
             {selectedIds.size > 0 && (
               <button
                 onClick={handleBatchAdd}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white rounded-lg transition-colors flex items-center gap-2 shadow-sm"
+                className="px-4 py-2 min-h-[38px] bg-emerald-600 hover:bg-emerald-500 text-xs font-semibold text-white rounded-lg transition-colors flex items-center gap-2 shadow-sm cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 Seçilen {selectedIds.size} Soruyu Ekle

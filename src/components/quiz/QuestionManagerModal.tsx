@@ -161,7 +161,7 @@ export const QuestionManagerModal: React.FC<QuestionManagerModalProps> = ({
               {questions.map((q, idx) => (
                 <div
                   key={q.id}
-                  className="py-3.5 px-3 flex items-start justify-between gap-4 hover:bg-slate-50 rounded-xl transition-colors group"
+                  className="py-3.5 px-2 sm:px-3 flex flex-col sm:flex-row sm:items-start justify-between gap-3 hover:bg-slate-50 rounded-xl transition-colors group"
                 >
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     {/* Question Index */}
@@ -203,7 +203,7 @@ export const QuestionManagerModal: React.FC<QuestionManagerModalProps> = ({
                         {q.topic && (
                           <>
                             <span aria-hidden="true">·</span>
-                            <span className="truncate max-w-[260px]">{q.topic}</span>
+                            <span className="truncate max-w-[220px] sm:max-w-[260px]">{q.topic}</span>
                           </>
                         )}
                       </div>
@@ -211,7 +211,7 @@ export const QuestionManagerModal: React.FC<QuestionManagerModalProps> = ({
                   </div>
 
                   {/* Row Actions */}
-                  <div className="flex items-center gap-1 shrink-0 pt-0.5">
+                  <div className="flex items-center justify-end sm:justify-start gap-1 shrink-0 pt-1 sm:pt-0.5 pl-10 sm:pl-0">
                     <button
                       type="button"
                       onClick={() => onMoveQuestion(idx, 'up')}

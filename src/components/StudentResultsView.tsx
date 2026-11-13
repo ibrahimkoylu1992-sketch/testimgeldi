@@ -61,9 +61,9 @@ export const StudentResultsView: React.FC<StudentResultsViewProps> = ({ onOpenRe
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-5xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-5 sm:space-y-6">
       {/* Header Banner */}
-      <div className="bg-gradient-to-r from-emerald-800 to-teal-900 rounded-2xl p-6 sm:p-8 text-white shadow-lg">
+      <div className="bg-gradient-to-r from-emerald-800 to-teal-900 rounded-2xl p-5 sm:p-8 text-white shadow-lg">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
             <GraduationCap className="w-6 h-6 text-white" />
@@ -187,7 +187,7 @@ export const StudentResultsView: React.FC<StudentResultsViewProps> = ({ onOpenRe
                     Okul: {result.school || exam.school || 'Cumhuriyet Ortaokulu'}
                   </span>
 
-                  <div className="grid grid-cols-4 gap-2 text-center mb-3 p-3 bg-slate-50 rounded-lg">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-2 text-center mb-3 p-3 bg-slate-50 rounded-lg">
                     <div>
                       <span className="text-[10px] text-slate-500 block">Puan</span>
                       <span className="text-lg font-black text-indigo-700 font-mono tabular-nums">
@@ -258,14 +258,14 @@ export const StudentResultsView: React.FC<StudentResultsViewProps> = ({ onOpenRe
                   )}
                 </div>
 
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
                   <span className="text-xs text-slate-500">Kitapçık: <strong>{result.booklet}</strong></span>
                   <button
                     onClick={() => onOpenReportCard(result, exam as Exam)}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+                    className="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-xs cursor-pointer min-h-[40px]"
                   >
                     <Printer className="w-3.5 h-3.5" />
-                    <span>Karnemi Görüntüle & Yazdır</span>
+                    <span>Karnemi Görüntüle &amp; Yazdır</span>
                   </button>
                 </div>
               </div>
