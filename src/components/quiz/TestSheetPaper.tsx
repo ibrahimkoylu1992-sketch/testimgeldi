@@ -1,26 +1,110 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { QuizDocument, QuizQuestion } from '../../types/quiz';
-import { FileText, Layers, Check, ChevronLeft, ChevronRight, LayoutTemplate } from 'lucide-react';
+import { FileText, Layers, Check, Maximize2, ZoomIn, ZoomOut, Edit3 } from 'lucide-react';
 
 interface TestSheetPaperProps {
   quiz: QuizDocument;
   showAnswerKey?: boolean;
   showMiniOpticalGrid?: boolean;
+  onEditQuestion?: (question: QuizQuestion) => void;
 }
+
+const A4_WIDTH_PX = 794; // 210mm at 96dpi
+const A4_HEIGHT_PX = 1123; // 297mm at 96dpi
+
+const ScaledA4Wrapper: React.FC<{
+  scale: number;
+  children: React.ReactNode;
+}> = ({ scale, children }) => {
+  const innerRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState<{ width: number; height: number }>({
+    width: A4_WIDTH_PX,
+    height: A4_HEIGHT_PX,
+  });
+
+  useEffect(() => {
+    const el = innerRef.current;
+    if (!el) return;
+
+    const updateSize = () => {
+      const w = el.offsetWidth || A4_WIDTH_PX;
+      const h = el.offsetHeight || A4_HEIGHT_PX;
+      setSize((prev) => (prev.width === w && prev.height === h ? prev : { width: w, height: h }));
+    };
+
+    updateSize();
+    const ro = new ResizeObserver(updateSize);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [children]);
+
+  if (Math.abs(scale - 1) < 0.005) {
+    return (
+      <div className="mx-auto" style={{ width: '210mm' }}>
+        <div ref={innerRef}>{children}</div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="mx-auto relative"
+      style={{
+        width: `${Math.round(size.width * scale)}px`,
+        height: `${Math.round(size.height * scale)}px`,
+      }}
+    >
+      <div
+        ref={innerRef}
+        style={{
+          width: '210mm',
+          transform: `scale(${scale})`,
+          transformOrigin: 'top left',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+};
 
 export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
   quiz,
   showAnswerKey = false,
   showMiniOpticalGrid = true,
+  onEditQuestion,
 }) => {
   const { settings, questions } = quiz;
 
   // Active page tab view: 'all' or page index 0, 1, 2... or 'answers'
   const [activeTab, setActiveTab] = useState<'all' | number | 'answers'>('all');
 
+  // Zoom mode: 'fit' automatically scales A4 to viewport width (up to 100%)
+  const [zoomMode, setZoomMode] = useState<'fit' | 0.75 | 1 | 1.15>('fit');
+  const [fitScale, setFitScale] = useState<number>(1);
+  const previewAreaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = previewAreaRef.current;
+    if (!el) return;
+
+    const updateFitScale = () => {
+      const availableWidth = el.clientWidth;
+      if (!availableWidth) return;
+      // Leave slight breathing room (16px) so paper border/shadow never clips
+      const computed = Math.min(1, Math.max(0.32, (availableWidth - 16) / A4_WIDTH_PX));
+      setFitScale(Number(computed.toFixed(3)));
+    };
+
+    updateFitScale();
+    const ro = new ResizeObserver(updateFitScale);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const activeScale = zoomMode === 'fit' ? fitScale : zoomMode;
+
   // How many questions fit on page 1 vs subsequent pages
-  // Page 1 has the large header & student table, so 4-5 questions fit nicely.
-  // Subsequent pages only have a slim header, so 6-8 questions fit.
   const customPerPage = settings.questionsPerPage && settings.questionsPerPage > 0 ? settings.questionsPerPage : 0;
 
   const page1Capacity = customPerPage > 0 ? customPerPage : 4;
@@ -31,12 +115,10 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
   if (questions.length === 0) {
     pages.push([]);
   } else {
-    let remaining = [...questions];
-    // Page 1
+    const remaining = [...questions];
     const p1 = remaining.splice(0, page1Capacity);
     pages.push(p1);
 
-    // Page 2, 3...
     while (remaining.length > 0) {
       pages.push(remaining.splice(0, subsequentCapacity));
     }
@@ -53,7 +135,6 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
           const trimmed = line.trim();
           if (!trimmed) return <div key={idx} className="h-1" />;
 
-          // Detect bold question stem (commonly begins with "Buna göre", "olduğuna göre", "Aşağıdakilerden", etc.)
           const isStem =
             trimmed.startsWith('Buna göre') ||
             trimmed.startsWith('olduğuna göre') ||
@@ -83,7 +164,6 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
     const count = q.optionsCount || 4;
     const currentOptions = options.slice(0, count);
 
-    // Check if options are short (e.g. 2², 15) so they fit in 1 horizontal row
     const isShort = currentOptions.every((o) => (o.text?.length || 0) < 12);
 
     return (
@@ -109,14 +189,27 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
   };
 
   // Render a single question block
-  const renderQuestionBlock = (q: QuizQuestion) => {
+  const renderQuestionBlock = (q: QuizQuestion, interactive: boolean) => {
     return (
       <div
         key={q.id}
-        className={`py-3.5 ${
+        className={`py-3.5 relative group/q ${
           settings.showQuestionDividerLines ? 'border-b border-slate-300' : ''
         } break-inside-avoid page-break-inside-avoid`}
       >
+        {/* Subtle Hover Edit Trigger (screen only) */}
+        {interactive && onEditQuestion && (
+          <button
+            type="button"
+            onClick={() => onEditQuestion(q)}
+            className="no-print opacity-0 group-hover/q:opacity-100 focus:opacity-100 transition-opacity absolute top-2 right-0 px-2 py-1 rounded-md bg-indigo-600 text-white text-[10px] font-semibold flex items-center gap-1 shadow-xs cursor-pointer z-10"
+            title="Bu soruyu düzenle"
+          >
+            <Edit3 className="w-3 h-3" />
+            <span>Düzenle</span>
+          </button>
+        )}
+
         {/* Question Header & Number */}
         <div className="flex items-start gap-2 mb-1.5">
           <span className="font-bold text-sm text-slate-950 font-sans tracking-tight">
@@ -134,7 +227,7 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
           )}
         </div>
 
-        {/* Cropped Image (if question was cropped from PDF/document) */}
+        {/* Cropped Image */}
         {q.croppedImage && (
           <div className="my-2 max-w-full overflow-hidden flex justify-center bg-white">
             <img
@@ -145,7 +238,7 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
           </div>
         )}
 
-        {/* Diagram / Illustration (if question has a separate graphic) */}
+        {/* Diagram / Illustration */}
         {q.diagramImage && !q.croppedImage && (
           <div className="my-2 max-w-full overflow-hidden flex justify-center bg-white">
             <img
@@ -168,11 +261,15 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
   };
 
   // Render an individual A4 Page
-  const renderSingleA4Sheet = (pageQuestions: QuizQuestion[], pageIndex: number, totalPages: number) => {
+  const renderSingleA4Sheet = (
+    pageQuestions: QuizQuestion[],
+    pageIndex: number,
+    totalPages: number,
+    interactive = true
+  ) => {
     const isPageOne = pageIndex === 0;
     const isLastPage = pageIndex === totalPages - 1;
 
-    // Split page questions into 2 columns
     const totalOnPage = pageQuestions.length;
     const midPoint = Math.ceil(totalOnPage / 2);
     const leftCol = settings.twoColumnLayout ? pageQuestions.slice(0, midPoint) : pageQuestions;
@@ -180,8 +277,8 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
 
     return (
       <div
-        key={`a4-page-${pageIndex}`}
-        className="a4-sheet bg-white text-slate-950 mx-auto shadow-2xl border border-slate-300 print:shadow-none print:border-none select-none font-sans relative flex flex-col justify-between mb-8 print:mb-0"
+        key={`a4-page-${pageIndex}-${interactive ? 'screen' : 'print'}`}
+        className="a4-sheet bg-white text-slate-950 mx-auto shadow-xl border border-slate-300 print:shadow-none print:border-none select-none font-sans relative flex flex-col justify-between"
         style={{
           width: '210mm',
           minHeight: '297mm',
@@ -196,7 +293,6 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
         <div className="flex-1 flex flex-col">
           {/* HEADER SECTION */}
           {isPageOne ? (
-            /* Page 1 Header */
             settings.headerStyle === 'meb_formal' ? (
               <div className="border-2 border-slate-900 p-3 mb-3 text-center shrink-0">
                 <div className="flex items-center justify-between pb-1.5 border-b border-slate-300 text-xs font-bold text-slate-800">
@@ -214,7 +310,6 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
                 </div>
               </div>
             ) : (
-              /* Standard Turkish Exam Layout matching user sample (ADI, SOYADI, NO) */
               <div className="pb-2.5 mb-2 border-b border-slate-900 shrink-0">
                 <div className="text-center mb-3">
                   <h1 className="text-sm sm:text-base font-extrabold uppercase tracking-tight text-slate-950">
@@ -265,7 +360,6 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
               </div>
             )
           ) : (
-            /* Page 2, 3... Compact Header */
             <div className="pb-2 mb-3 border-b-2 border-slate-900 flex items-center justify-between text-xs font-bold text-slate-900 shrink-0">
               <span className="uppercase">{settings.schoolName}</span>
               <span className="font-extrabold">{settings.examTitle}</span>
@@ -277,31 +371,28 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
           <div className="flex-1 relative">
             {pageQuestions.length === 0 ? (
               <div className="py-24 text-center text-slate-400 italic text-sm">
-                Bu sayfada henüz soru bulunmuyor.
+                Bu sayfada henüz soru bulunmuyor. Üstteki &quot;Soru Listesi&quot; veya soru ekleme butonlarını kullanabilirsiniz.
               </div>
             ) : settings.twoColumnLayout ? (
               <div className="grid grid-cols-2 gap-x-6 relative h-full">
-                {/* Central Vertical Divider Line down the page */}
                 <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-[1px] bg-slate-900 pointer-events-none" />
 
-                {/* Left Column */}
                 <div className="pr-3 space-y-2">
-                  {leftCol.map((q) => renderQuestionBlock(q))}
+                  {leftCol.map((q) => renderQuestionBlock(q, interactive))}
                 </div>
 
-                {/* Right Column */}
                 <div className="pl-3 space-y-2">
-                  {rightCol.map((q) => renderQuestionBlock(q))}
+                  {rightCol.map((q) => renderQuestionBlock(q, interactive))}
                 </div>
               </div>
             ) : (
               <div className="space-y-4">
-                {pageQuestions.map((q) => renderQuestionBlock(q))}
+                {pageQuestions.map((q) => renderQuestionBlock(q, interactive))}
               </div>
             )}
           </div>
 
-          {/* MINI OPTICAL BUBBLE GRID (Only on last page if enabled) */}
+          {/* MINI OPTICAL BUBBLE GRID */}
           {isLastPage && showMiniOpticalGrid && settings.showMiniOpticalGrid && questions.length > 0 && (
             <div className="mt-4 pt-2.5 border-t-2 border-slate-900 break-inside-avoid shrink-0">
               <div className="flex items-center justify-between pb-1 mb-1.5 border-b border-slate-200">
@@ -328,7 +419,7 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
                         {optLabels.map((lbl) => (
                           <div
                             key={lbl}
-                            className="w-3.5 h-3.5 rounded-full border border-slate-700 flex items-center justify-center text-[8px] font-semibold text-slate-700 hover:bg-slate-200"
+                            className="w-3.5 h-3.5 rounded-full border border-slate-700 flex items-center justify-center text-[8px] font-semibold text-slate-700"
                           >
                             {lbl}
                           </div>
@@ -358,7 +449,7 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
   const renderTeacherAnswerKeyPage = () => {
     return (
       <div
-        className="a4-sheet bg-white text-slate-950 mx-auto shadow-2xl border border-slate-300 print:shadow-none print:border-none select-none font-sans relative flex flex-col justify-between mb-8 print:mb-0"
+        className="a4-sheet bg-white text-slate-950 mx-auto shadow-xl border border-slate-300 print:shadow-none print:border-none select-none font-sans relative flex flex-col justify-between"
         style={{
           width: '210mm',
           minHeight: '297mm',
@@ -374,7 +465,7 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
               ÖĞRETMEN DÖKÜMANI
             </span>
             <h2 className="text-base font-extrabold uppercase text-slate-950 mt-1">
-              {settings.examTitle} - CEVAP ANAHTARI & KAZANIM TABLOSU
+              {settings.examTitle} - CEVAP ANAHTARI &amp; KAZANIM TABLOSU
             </h2>
             <p className="text-xs text-slate-600 mt-1">
               {settings.schoolName} · {settings.courseName} ({settings.gradeLevel}) · Toplam {questions.length} Soru
@@ -394,13 +485,13 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
             <tbody className="divide-y divide-slate-200">
               {questions.map((q) => (
                 <tr key={q.id} className="hover:bg-slate-50">
-                  <td className="py-2 px-2 text-center font-bold border-r border-slate-300">
+                  <td className="py-2 px-2 text-center font-bold border-r border-slate-300 tabular-nums">
                     {q.orderNumber}
                   </td>
                   <td className="py-2 px-3 text-center border-r border-slate-300 font-extrabold text-sm text-emerald-700">
                     {q.correctAnswer}
                   </td>
-                  <td className="py-2 px-3 text-center border-r border-slate-300 font-mono">
+                  <td className="py-2 px-3 text-center border-r border-slate-300 font-mono tabular-nums">
                     {q.points} P
                   </td>
                   <td className="py-2 px-3 border-r border-slate-300 font-medium text-slate-700">
@@ -425,13 +516,14 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
 
   return (
     <div id="printable-quiz-sheet" className="w-full">
-      {/* PAGE TABS CONTROLLER (Hidden when printing) */}
-      <div className="no-print mb-4 flex flex-wrap items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-slate-200 shadow-xs">
+      {/* PAGE TABS & ZOOM CONTROLLER (Hidden when printing) */}
+      <div className="no-print mb-4 flex flex-wrap items-center justify-between gap-3 bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           {/* All Pages Tab */}
           <button
+            type="button"
             onClick={() => setActiveTab('all')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === 'all'
                 ? 'bg-slate-900 text-white shadow-xs'
                 : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
@@ -444,9 +536,10 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
           {/* Individual Page Tabs */}
           {pages.map((_, idx) => (
             <button
+              type="button"
               key={idx}
               onClick={() => setActiveTab(idx)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
                 activeTab === idx
                   ? 'bg-indigo-600 text-white shadow-xs'
                   : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
@@ -459,8 +552,9 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
 
           {/* Answer Key Tab */}
           <button
+            type="button"
             onClick={() => setActiveTab('answers')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === 'answers'
                 ? 'bg-emerald-700 text-white shadow-xs'
                 : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800'
@@ -471,41 +565,107 @@ export const TestSheetPaper: React.FC<TestSheetPaperProps> = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-slate-500">
-          <span className="hidden sm:inline">
-            Sayfa boyutu: <strong>A4 (210×297mm)</strong>
-          </span>
-          <span className="font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">
-            Toplam {totalPagesCount} Sayfa
+        {/* Right: Zoom Controls + Metadata */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setZoomMode('fit')}
+              className={`px-2.5 py-1 text-xs font-semibold rounded-md flex items-center gap-1 transition-colors cursor-pointer whitespace-nowrap ${
+                zoomMode === 'fit'
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+              title="Sayfayı ekrana tam sığdır"
+            >
+              <Maximize2 className="w-3 h-3" />
+              <span>Ekrana Sığdır</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setZoomMode(0.75)}
+              className={`px-2 py-1 text-xs font-semibold rounded-md flex items-center gap-0.5 transition-colors cursor-pointer tabular-nums ${
+                zoomMode === 0.75
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <ZoomOut className="w-3 h-3" />
+              <span>%75</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setZoomMode(1)}
+              className={`px-2 py-1 text-xs font-semibold rounded-md transition-colors cursor-pointer tabular-nums ${
+                zoomMode === 1
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              %100
+            </button>
+            <button
+              type="button"
+              onClick={() => setZoomMode(1.15)}
+              className={`px-2 py-1 text-xs font-semibold rounded-md flex items-center gap-0.5 transition-colors cursor-pointer tabular-nums ${
+                zoomMode === 1.15
+                  ? 'bg-white text-indigo-700 shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <ZoomIn className="w-3 h-3" />
+              <span>%115</span>
+            </button>
+          </div>
+
+          <span className="hidden md:inline text-xs text-slate-500">
+            A4 (210×297mm) · <span className="tabular-nums font-medium text-slate-700">%{Math.round(activeScale * 100)}</span>
           </span>
         </div>
       </div>
 
       {/* RENDER SHEETS */}
-      {/* 1. On Screen Preview: Depends on activeTab */}
-      <div className="print:hidden">
+      {/* 1. On Screen Preview (Auto-scaled, zero horizontal overflow) */}
+      <div
+        ref={previewAreaRef}
+        className={`no-print print:hidden w-full ${zoomMode !== 'fit' && activeScale > fitScale ? 'overflow-x-auto' : 'overflow-x-hidden'}`}
+      >
         {activeTab === 'all' && (
-          <div className="space-y-8">
-            {pages.map((pQuestions, pIdx) =>
-              renderSingleA4Sheet(pQuestions, pIdx, totalPagesCount)
+          <div className="space-y-8 pb-2">
+            {pages.map((pQuestions, pIdx) => (
+              <ScaledA4Wrapper key={`wrap-${pIdx}`} scale={activeScale}>
+                {renderSingleA4Sheet(pQuestions, pIdx, totalPagesCount, true)}
+              </ScaledA4Wrapper>
+            ))}
+            {showAnswerKey && (
+              <ScaledA4Wrapper scale={activeScale}>
+                {renderTeacherAnswerKeyPage()}
+              </ScaledA4Wrapper>
             )}
-            {showAnswerKey && renderTeacherAnswerKeyPage()}
           </div>
         )}
 
         {typeof activeTab === 'number' && (
-          <div>
-            {renderSingleA4Sheet(pages[activeTab] || [], activeTab, totalPagesCount)}
+          <div className="pb-2">
+            <ScaledA4Wrapper scale={activeScale}>
+              {renderSingleA4Sheet(pages[activeTab] || [], activeTab, totalPagesCount, true)}
+            </ScaledA4Wrapper>
           </div>
         )}
 
-        {activeTab === 'answers' && renderTeacherAnswerKeyPage()}
+        {activeTab === 'answers' && (
+          <div className="pb-2">
+            <ScaledA4Wrapper scale={activeScale}>
+              {renderTeacherAnswerKeyPage()}
+            </ScaledA4Wrapper>
+          </div>
+        )}
       </div>
 
-      {/* 2. Print Output: ALWAYS RENDER ALL PAGES FOR BROWSER PRINT / PDF */}
-      <div className="hidden print:block">
+      {/* 2. Print Output: ALWAYS RENDER ALL PAGES AT TRUE 1:1 A4 SIZE */}
+      <div className="hidden print:block space-y-0">
         {pages.map((pQuestions, pIdx) =>
-          renderSingleA4Sheet(pQuestions, pIdx, totalPagesCount)
+          renderSingleA4Sheet(pQuestions, pIdx, totalPagesCount, false)
         )}
         {showAnswerKey && renderTeacherAnswerKeyPage()}
       </div>
