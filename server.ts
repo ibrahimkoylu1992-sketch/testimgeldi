@@ -660,6 +660,15 @@ app.get('/download-site', (_req, res) => {
   return res.status(404).send('Site arşivi bulunamadı.');
 });
 
+// Download Promotional Video for Teachers
+app.get('/download-promo-video', (_req, res) => {
+  const file = path.resolve(__dirname, 'public/testimgeldi-tanitim-videosu.mp4');
+  if (fs.existsSync(file)) {
+    return res.download(file, 'testimgeldi-ogretmen-tanitim.mp4');
+  }
+  return res.status(404).send('Tanıtım videosu henüz hazırlanmadı.');
+});
+
 // Setup Vite or Static File Serving
 async function startServer() {
   // Ensure public mobile access by keeping auth bridge bypassed
