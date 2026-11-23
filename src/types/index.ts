@@ -15,6 +15,10 @@ export interface User {
   phone?: string;
   phoneVerified?: boolean;
   emailVerified?: boolean;
+  authProvider?: 'email' | 'google' | 'both';
+  hasPlatformPassword?: boolean;
+  firebaseUid?: string;
+  avatarUrl?: string;
   createdAt: string;
   isActive: boolean;
   // Subscription fields

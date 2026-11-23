@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { StorageService, INITIAL_ADMIN_EMAIL } from '../lib/storage';
+import { hashPassword } from '../lib/password';
 import { User, Exam, SubscriptionRequest, UserRole } from '../types';
 import { useToast } from './Toast';
 import {
@@ -340,7 +341,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     refreshData();
   };
 
-  const handleAdminResetPassword = (e: React.FormEvent) => {
+  const handleAdminResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resetTargetUser) return;
     if (newPasswordVal.length < 6) {
@@ -348,7 +349,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       return;
     }
 
-    StorageService.updateUser(resetTargetUser.id, { passwordHash: newPasswordVal });
+    const hashed = await hashPassword(newPasswordVal);
+    StorageService.updateUser(resetTargetUser.id, {
+      passwordHash: hashed,
+      hasPlatformPassword: true,
+      authProvider: resetTargetUser.firebaseUid ? 'both' : (resetTargetUser.authProvider || 'email'),
+    });
     showToast(`${resetTargetUser.name} kullanıcısının şifresi güncellendi.`, 'success');
     setResetTargetUser(null);
     setNewPasswordVal('123456');

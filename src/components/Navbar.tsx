@@ -227,11 +227,17 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:border-slate-300 bg-slate-50 hover:bg-slate-100 transition-colors text-xs font-medium text-slate-800 cursor-pointer min-h-[40px]"
                 >
                   <div
-                    className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs uppercase ${
+                    className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs uppercase overflow-hidden ${
                       isSuperAdmin ? 'bg-amber-200 text-amber-900' : 'bg-indigo-100 text-indigo-700'
                     }`}
                   >
-                    {isSuperAdmin ? '👑' : currentUser.name.charAt(0)}
+                    {isSuperAdmin ? (
+                      '👑'
+                    ) : currentUser.avatarUrl ? (
+                      <img src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+                    ) : (
+                      currentUser.name.charAt(0)
+                    )}
                   </div>
                   <div className="text-left hidden sm:block">
                     <div className="font-semibold text-slate-900 leading-tight truncate max-w-[120px]">
@@ -316,7 +322,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                       className="w-full text-left px-4 py-2 hover:bg-slate-50 text-slate-700 flex items-center gap-2 transition-colors cursor-pointer text-xs min-h-[38px]"
                     >
                       <KeyRound className="w-4 h-4 text-slate-400" />
-                      <span>Şifremi Değiştir</span>
+                      <span>
+                        {!currentUser.passwordHash || currentUser.hasPlatformPassword === false
+                          ? 'Platform Şifresi Belirle'
+                          : 'Şifremi Değiştir'}
+                      </span>
                     </button>
 
                     <button
@@ -369,11 +379,17 @@ export const Navbar: React.FC<NavbarProps> = ({
               <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase overflow-hidden ${
                       isSuperAdmin ? 'bg-amber-200 text-amber-900' : 'bg-indigo-100 text-indigo-700'
                     }`}
                   >
-                    {isSuperAdmin ? '👑' : currentUser.name.charAt(0)}
+                    {isSuperAdmin ? (
+                      '👑'
+                    ) : currentUser.avatarUrl ? (
+                      <img src={currentUser.avatarUrl} alt={currentUser.name} className="w-full h-full object-cover" />
+                    ) : (
+                      currentUser.name.charAt(0)
+                    )}
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-slate-900 leading-tight">
@@ -521,7 +537,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors min-h-[44px] cursor-pointer"
                 >
                   <KeyRound className="w-4 h-4 text-slate-500" />
-                  <span>Şifremi Değiştir</span>
+                  <span>
+                    {!currentUser.passwordHash || currentUser.hasPlatformPassword === false
+                      ? 'Platform Şifresi Belirle'
+                      : 'Şifremi Değiştir'}
+                  </span>
                 </button>
 
                 <button

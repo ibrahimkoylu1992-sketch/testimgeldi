@@ -7,6 +7,7 @@ import {
   deleteRecordFromCloud,
   fetchCollectionFromCloud,
 } from './firebaseSync';
+import { hashPassword } from './password';
 
 const STORAGE_KEYS = {
   USERS: 'testcrafta_users_v2',
@@ -345,7 +346,7 @@ export const StorageService = {
       users = users.filter((u) => u.email.toLowerCase() !== 'info@testimgeldi.com');
       let modified = prevLen !== users.length;
 
-      // 2. Ensure ibrahimkoylu1992@gmail.com exists as superadmin with password 123456
+      // 2. Ensure ibrahimkoylu1992@gmail.com exists as superadmin without overwriting updated password
       const adminIdx = users.findIndex((u) => u.email.toLowerCase() === INITIAL_ADMIN_EMAIL.toLowerCase());
       if (adminIdx === -1) {
         users.unshift(DEFAULT_USERS[0]);
@@ -355,7 +356,9 @@ export const StorageService = {
           users[adminIdx].role = 'superadmin';
           users[adminIdx].subscriptionStatus = 'lifetime';
           users[adminIdx].name = 'İbrahim Köylü';
-          users[adminIdx].passwordHash = '123456';
+          if (users[adminIdx].passwordHash === undefined || users[adminIdx].passwordHash === null) {
+            users[adminIdx].passwordHash = INITIAL_ADMIN_PASSWORD;
+          }
           modified = true;
         }
       }
@@ -751,7 +754,7 @@ export const StorageService = {
     }
   },
 
-  verifyAndResetPassword(email: string, code: string, newPassword: string): { success: boolean; message: string } {
+  async verifyAndResetPassword(email: string, code: string, newPassword: string): Promise<{ success: boolean; message: string }> {
     const store = this.getResetCodes();
     const entry = store[email.toLowerCase()];
     if (!entry) {
@@ -777,7 +780,9 @@ export const StorageService = {
       return { success: false, message: 'Kullanıcı bulunamadı.' };
     }
 
-    user.passwordHash = newPassword;
+    user.passwordHash = await hashPassword(newPassword);
+    user.hasPlatformPassword = true;
+    user.authProvider = user.firebaseUid ? 'both' : (user.authProvider || 'email');
     this.saveUser(user);
 
     return { success: true, message: 'Şifreniz başarıyla güncellendi.' };

@@ -676,39 +676,37 @@ async function startServer() {
 
   const distPath = path.resolve(__dirname, 'dist');
   const hasDist = fs.existsSync(distPath) && fs.existsSync(path.join(distPath, 'index.html'));
+  const isProdMode = process.env.NODE_ENV === 'production' && hasDist;
+  let viteServer: Awaited<ReturnType<typeof createViteServer>> | null = null;
 
-  if (process.env.NODE_ENV === 'production' && hasDist) {
+  if (isProdMode) {
     app.use(express.static(distPath));
     app.get('*', (_req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   } else {
-    const vitePromise = createViteServer({
-      server: { middlewareMode: true },
+    const hmrDisabled = process.env.DISABLE_HMR === 'true';
+    viteServer = await createViteServer({
+      server: {
+        middlewareMode: true,
+        hmr: !hmrDisabled,
+        ws: hmrDisabled ? false : undefined,
+      },
       appType: 'spa',
     });
 
-    app.use(async (req, res, next) => {
-      try {
-        const vite = await vitePromise;
-        vite.middlewares(req, res, next);
-      } catch (e) {
-        next(e);
-      }
-    });
+    app.use(viteServer.middlewares);
 
     app.get('*', async (req, res, next) => {
       try {
-        const vite = await vitePromise;
         const url = req.originalUrl;
         const indexHtmlPath = path.resolve(__dirname, 'index.html');
         let template = fs.readFileSync(indexHtmlPath, 'utf-8');
-        template = await vite.transformIndexHtml(url, template);
+        template = await viteServer!.transformIndexHtml(url, template);
         res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
       } catch (e) {
         try {
-          const vite = await vitePromise;
-          vite.ssrFixStacktrace(e as Error);
+          viteServer?.ssrFixStacktrace(e as Error);
         } catch {}
         next(e);
       }
@@ -719,10 +717,23 @@ async function startServer() {
     console.log(`testimgeldi server listening on http://${HOST}:${PORT}`);
   });
 
+  let shuttingDown = false;
   const shutdown = () => {
-    server.close(() => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+
+    const forceTimer = setTimeout(() => {
+      process.exit(0);
+    }, 1000);
+    forceTimer.unref();
+
+    server.close(async () => {
+      try {
+        await viteServer?.close();
+      } catch {}
       process.exit(0);
     });
+    server.closeAllConnections?.();
   };
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
