@@ -35,13 +35,23 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
     e.preventDefault();
     setErrorMsg('');
 
-    if (newPassword !== confirmPassword) {
-      setErrorMsg('Yeni şifreler birbiriyle uyuşmuyor.');
+    if (!needsInitialPassword && !currentPassword) {
+      setErrorMsg('Lütfen mevcut şifrenizi giriniz.');
+      return;
+    }
+
+    if (!newPassword) {
+      setErrorMsg('Lütfen yeni şifrenizi giriniz.');
       return;
     }
 
     if (newPassword.length < 6) {
       setErrorMsg('Yeni şifre en az 6 karakter olmalıdır.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMsg('Yeni şifreler birbiriyle uyuşmuyor.');
       return;
     }
 
@@ -52,7 +62,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
     if (res.success) {
       showToast(
         needsInitialPassword
-          ? 'Platform şifreniz oluşturuldu. Artık hem Google ile hem de e-posta + şifre ile giriş yapabilirsiniz.'
+          ? 'Platform şifreniz oluşturuldu. Artık hem Google ile hem de e-posta/kullanıcı adı + şifre ile giriş yapabilirsiniz.'
           : 'Şifreniz başarıyla güncellendi.',
         'success'
       );
@@ -77,7 +87,10 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
               <h3 className="font-bold text-slate-900 text-sm">
                 {needsInitialPassword ? 'Platform Şifresi Belirle' : 'Şifremi Değiştir'}
               </h3>
-              <p className="text-[11px] text-slate-500">{currentUser?.email}</p>
+              <p className="text-[11px] text-slate-500">
+                {currentUser?.username ? `@${currentUser.username} · ` : ''}
+                {currentUser?.email}
+              </p>
             </div>
           </div>
           <button
@@ -88,7 +101,19 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} method="post" autoComplete="on" noValidate className="p-6 space-y-4">
+          {/* Hidden username input helps Google/browser Password Manager associate the saved password */}
+          <input
+            type="text"
+            name="username"
+            autoComplete="username"
+            value={currentUser?.username || currentUser?.email || ''}
+            readOnly
+            className="sr-only"
+            tabIndex={-1}
+            aria-hidden="true"
+          />
+
           {errorMsg && (
             <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs">
               {errorMsg}
@@ -99,7 +124,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
             <div className="p-3.5 rounded-lg bg-indigo-50/80 border border-indigo-200 text-indigo-900 text-xs leading-relaxed flex items-start gap-2.5">
               <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
               <span>
-                Google hesabınızla giriş yaptınız. E-posta adresiniz ve şifre ile de giriş yapabilmek için <strong>testimgeldi</strong> platformuna özel bir şifre belirleyebilirsiniz.
+                Google hesabınızla giriş yaptınız. E-posta adresiniz veya kullanıcı adınız ve şifre ile de giriş yapabilmek için <strong>testimgeldi</strong> platformuna özel bir şifre belirleyebilirsiniz.
               </span>
             </div>
           )}
@@ -109,7 +134,8 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
               <label className="block text-xs font-semibold text-slate-700 mb-1">Mevcut Şifre</label>
               <input
                 type="password"
-                required
+                name="current-password"
+                autoComplete="current-password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 placeholder="••••••"
@@ -124,7 +150,8 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
             </label>
             <input
               type="password"
-              required
+              name="new-password"
+              autoComplete="new-password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••"
@@ -138,7 +165,8 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
             </label>
             <input
               type="password"
-              required
+              name="confirm-password"
+              autoComplete="new-password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="••••••"

@@ -8,10 +8,13 @@ import {
   fetchCollectionFromCloud,
 } from './firebaseSync';
 import { hashPassword } from './password';
+import { normalizeUsername } from './username';
 
 const STORAGE_KEYS = {
   USERS: 'testcrafta_users_v2',
   CURRENT_USER: 'testcrafta_current_user_v2',
+  REMEMBER_ME: 'testcrafta_remember_me_v1',
+  REMEMBERED_IDENTIFIER: 'testcrafta_remembered_id_v1',
   EXAMS: 'testcrafta_exams_v2',
   RESULTS: 'testcrafta_student_results_v2',
   RESET_CODES: 'testcrafta_password_resets_v2',
@@ -428,7 +431,8 @@ export const StorageService = {
 
     const cur = this.getCurrentUser();
     if (cur && (cur.id === id || cur.email.toLowerCase() === users[idx].email.toLowerCase())) {
-      this.setCurrentUser(users[idx]);
+      const keepLocal = !!localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+      this.setCurrentUser(users[idx], keepLocal);
     }
     pushRecordToCloud('users', users[idx].id, users[idx]).catch(() => {});
     return users[idx];
@@ -440,21 +444,87 @@ export const StorageService = {
     deleteRecordFromCloud('users', id).catch(() => {});
   },
 
+  isUsernameAvailable(username: string, excludeUserId?: string): boolean {
+    const clean = normalizeUsername(username);
+    if (!clean) return true;
+    const users = this.getUsers();
+    return !users.some(
+      (u) => u.id !== excludeUserId && u.username && u.username.toLowerCase() === clean
+    );
+  },
+
+  findUserByLoginIdentifier(identifier: string): User | undefined {
+    const raw = identifier.trim().toLowerCase();
+    if (!raw) return undefined;
+    const cleanUsername = normalizeUsername(raw);
+    const users = this.getUsers();
+    return users.find(
+      (u) =>
+        u.email.toLowerCase() === raw ||
+        (u.username && u.username.toLowerCase() === cleanUsername)
+    );
+  },
+
+  getRememberMePreference(): boolean {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.REMEMBER_ME);
+      return stored === null ? true : stored === 'true';
+    } catch {
+      return true;
+    }
+  },
+
+  setRememberMePreference(remember: boolean): void {
+    try {
+      localStorage.setItem(STORAGE_KEYS.REMEMBER_ME, remember ? 'true' : 'false');
+    } catch {}
+  },
+
+  getRememberedIdentifier(): string {
+    try {
+      return localStorage.getItem(STORAGE_KEYS.REMEMBERED_IDENTIFIER) || '';
+    } catch {
+      return '';
+    }
+  },
+
+  setRememberedIdentifier(identifier: string | null): void {
+    try {
+      if (identifier && identifier.trim()) {
+        localStorage.setItem(STORAGE_KEYS.REMEMBERED_IDENTIFIER, identifier.trim());
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.REMEMBERED_IDENTIFIER);
+      }
+    } catch {}
+  },
+
   getCurrentUser(): User | null {
     try {
-      const data = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
-      if (!data) return null; // Unauthenticated by default for landing page
-      return JSON.parse(data);
+      const localData = localStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+      if (localData) return JSON.parse(localData);
+      const sessionData = sessionStorage.getItem(STORAGE_KEYS.CURRENT_USER);
+      if (sessionData) return JSON.parse(sessionData);
+      return null;
     } catch {
       return null;
     }
   },
 
-  setCurrentUser(user: User | null): void {
+  setCurrentUser(user: User | null, remember?: boolean): void {
     if (user) {
-      localStorage.setItem(STORAGE_KEYS.CURRENT_USER, JSON.stringify(user));
+      const serialized = JSON.stringify(user);
+      const persistLocal =
+        remember !== undefined ? remember : this.getRememberMePreference();
+      if (persistLocal) {
+        localStorage.setItem(STORAGE_KEYS.CURRENT_USER, serialized);
+        sessionStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+      } else {
+        sessionStorage.setItem(STORAGE_KEYS.CURRENT_USER, serialized);
+        localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+      }
     } else {
       localStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
+      sessionStorage.removeItem(STORAGE_KEYS.CURRENT_USER);
     }
   },
 

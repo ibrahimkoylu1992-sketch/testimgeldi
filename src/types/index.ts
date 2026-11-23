@@ -5,6 +5,7 @@ export type SubscriptionStatus = 'trial' | 'active' | 'expired' | 'lifetime';
 export interface User {
   id: string;
   name: string;
+  username?: string;
   email: string;
   passwordHash: string;
   role: UserRole;

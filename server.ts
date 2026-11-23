@@ -127,7 +127,7 @@ Lütfen yalnızca geçerli JSON döndür.`;
   } catch (error: any) {
     console.error('OMR AI analizi hatası:', error);
     return res.status(500).json({
-      error: error?.message || 'Optik okuma sırasında bir hata oluştu.',
+      error: 'Optik okuma sırasında bir hata oluştu.',
       useClientFallback: true,
     });
   }
@@ -493,7 +493,8 @@ app.post('/api/admin/smtp-config', (req, res) => {
 
     return res.json({ success: true, message: 'SMTP ayarları başarıyla kaydedildi.' });
   } catch (e: any) {
-    return res.status(500).json({ error: e.message || 'Ayar kaydedilemedi.' });
+    console.error('SMTP config save error:', e);
+    return res.status(500).json({ error: 'SMTP ayarları kaydedilemedi.' });
   }
 });
 
@@ -545,7 +546,7 @@ app.post('/api/admin/test-email', async (req, res) => {
   } catch (err: any) {
     console.error('Test email error:', err);
     return res.status(500).json({
-      error: `E-posta gönderilemedi: ${err?.message || 'SMTP kimlik doğrulama hatası. Lütfen kullanıcı adı ve şifrenizi kontrol edin.'}`,
+      error: 'E-posta gönderilemedi: SMTP kimlik doğrulama hatası. Lütfen kullanıcı adı ve şifrenizi kontrol ediniz.',
     });
   }
 });

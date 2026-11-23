@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth, PendingGoogleProfile } from '../context/AuthContext';
+import { StorageService } from '../lib/storage';
+import { validateUsernameFormat } from '../lib/username';
 import { useToast } from './Toast';
 import {
   X,
   Lock,
   Mail,
   User,
+  AtSign,
   ArrowRight,
   KeyRound,
   CheckCircle2,
@@ -44,6 +47,8 @@ const GoogleIcon: React.FC<{ className?: string }> = ({ className = 'w-4 h-4' })
   </svg>
 );
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export const AuthModal: React.FC<AuthModalProps> = ({
   isOpen,
   onClose,
@@ -61,13 +66,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   } = useAuth();
   const { showToast } = useToast();
 
-  const [mode, setMode] = useState<'login' | 'register' | 'register-verify' | 'google-complete' | 'forgot' | 'reset-code'>(initialMode);
+  const [mode, setMode] = useState<
+    'login' | 'register' | 'register-verify' | 'google-complete' | 'forgot' | 'reset-code'
+  >(initialMode);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
   // Form states
+  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [rememberMe, setRememberMe] = useState<boolean>(() =>
+    StorageService.getRememberMePreference()
+  );
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [selectedRole, setSelectedRole] = useState<'teacher' | 'student'>('teacher');
@@ -95,6 +107,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setErrorMsg('');
       setPendingGoogleUser(null);
       setGooglePlatformPassword('');
+      const pref = StorageService.getRememberMePreference();
+      setRememberMe(pref);
+      if (pref) {
+        const savedId = StorageService.getRememberedIdentifier();
+        if (savedId) setLoginIdentifier(savedId);
+      }
     }
   }, [isOpen, initialMode]);
 
@@ -103,6 +121,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // GOOGLE LOGIN / REGISTER
   const handleGoogleAuth = async (fromMode: 'login' | 'register') => {
     setErrorMsg('');
+
+    if (fromMode === 'register' && username.trim()) {
+      const check = validateUsernameFormat(username);
+      if (!check.valid) {
+        setErrorMsg(check.error || 'Geçersiz kullanıcı adı.');
+        return;
+      }
+    }
+
     setGoogleLoading(true);
 
     const res = await loginWithGoogle(
@@ -110,14 +137,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         ? {
             roleForNewUser: selectedRole,
             name: name.trim() || undefined,
+            username: username.trim() || undefined,
             school: school.trim() || undefined,
             branch: branch.trim() || undefined,
             studentNumber: studentNumber.trim() || undefined,
             gradeLevel: gradeLevel.trim() || undefined,
             phone: phone.trim() || undefined,
             platformPassword: password.trim().length >= 6 ? password.trim() : undefined,
+            rememberMe,
           }
-        : undefined
+        : { rememberMe }
     );
 
     setGoogleLoading(false);
@@ -141,6 +170,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setPendingGoogleUser(res.pendingGoogleUser);
       setName(res.pendingGoogleUser.name);
       setEmail(res.pendingGoogleUser.email);
+      setUsername('');
       setGooglePlatformPassword('');
       setMode('google-complete');
       return;
@@ -157,6 +187,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     if (!pendingGoogleUser) return;
     setErrorMsg('');
 
+    if (username.trim()) {
+      const check = validateUsernameFormat(username);
+      if (!check.valid) {
+        setErrorMsg(check.error || 'Geçersiz kullanıcı adı.');
+        return;
+      }
+    }
+
     if (googlePlatformPassword.trim() && googlePlatformPassword.trim().length < 6) {
       setErrorMsg('Platform şifresi belirlemek istiyorsanız en az 6 karakter girmelisiniz.');
       return;
@@ -166,12 +204,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const res = await completeGoogleRegistration(pendingGoogleUser, {
       role: selectedRole,
       name: name.trim() || pendingGoogleUser.name,
+      username: username.trim() || undefined,
       school: school.trim() || undefined,
       branch: branch.trim() || undefined,
       studentNumber: studentNumber.trim() || undefined,
       gradeLevel: gradeLevel.trim() || undefined,
       phone: phone.trim() || undefined,
       platformPassword: googlePlatformPassword.trim() || undefined,
+      rememberMe,
     });
     setLoading(false);
 
@@ -188,13 +228,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  // LOGIN
+  // LOGIN (EMAIL OR USERNAME + PASSWORD)
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    setLoading(true);
 
-    const res = await login(email, password);
+    if (!loginIdentifier.trim()) {
+      setErrorMsg('Lütfen e-posta adresinizi veya kullanıcı adınızı giriniz.');
+      return;
+    }
+    if (!password) {
+      setErrorMsg('Lütfen şifrenizi giriniz.');
+      return;
+    }
+
+    setLoading(true);
+    const res = await login(loginIdentifier, password, rememberMe);
     setLoading(false);
 
     if (res.success) {
@@ -214,16 +263,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setErrorMsg('Lütfen adınızı ve soyadınızı giriniz.');
       return;
     }
-    if (!email.trim() || !email.includes('@')) {
+    if (!EMAIL_REGEX.test(email.trim())) {
       setErrorMsg('Lütfen geçerli bir e-posta adresi giriniz.');
+      return;
+    }
+    if (username.trim()) {
+      const check = validateUsernameFormat(username);
+      if (!check.valid) {
+        setErrorMsg(check.error || 'Geçersiz kullanıcı adı.');
+        return;
+      }
+      await StorageService.syncCloudToLocal().catch(() => {});
+      if (!StorageService.isUsernameAvailable(check.normalized)) {
+        setErrorMsg('Bu kullanıcı adı başka bir kullanıcı tarafından alınmış. Lütfen farklı bir kullanıcı adı seçiniz.');
+        return;
+      }
+    }
+    if (selectedRole === 'student' && !studentNumber.trim()) {
+      setErrorMsg('Lütfen öğrenci numaranızı giriniz.');
       return;
     }
     if (password.length < 6) {
       setErrorMsg('Şifreniz en az 6 karakter olmalıdır.');
-      return;
-    }
-    if (selectedRole === 'student' && !studentNumber.trim()) {
-      setErrorMsg('Lütfen öğrenci numaranızı giriniz.');
       return;
     }
 
@@ -236,7 +297,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    // If real SMTP email was dispatched, proceed to 6-digit verification step
     if (res.delivered) {
       setLoading(false);
       setRegisterVerificationCode('');
@@ -245,7 +305,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       return;
     }
 
-    // Otherwise complete email registration seamlessly without trapping user on unsent code
     const completeRes = await register(
       name,
       email,
@@ -255,7 +314,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       branch,
       studentNumber,
       gradeLevel,
-      phone
+      phone,
+      username,
+      true
     );
     setLoading(false);
 
@@ -299,7 +360,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       branch,
       studentNumber,
       gradeLevel,
-      phone
+      phone,
+      username,
+      true
     );
     setLoading(false);
 
@@ -335,8 +398,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    setLoading(true);
 
+    if (!EMAIL_REGEX.test(email.trim())) {
+      setErrorMsg('Lütfen geçerli bir e-posta adresi giriniz.');
+      return;
+    }
+
+    setLoading(true);
     const res = await requestPasswordReset(email);
     setLoading(false);
 
@@ -449,24 +517,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="relative flex items-center py-0.5">
                 <div className="flex-grow border-t border-slate-200" />
                 <span className="shrink mx-3 text-[11px] font-medium text-slate-400">
-                  veya e-posta & şifre ile
+                  veya e-posta / kullanıcı adı ile
                 </span>
                 <div className="flex-grow border-t border-slate-200" />
               </div>
 
-              <form onSubmit={handleLoginSubmit} className="space-y-3.5">
+              <form onSubmit={handleLoginSubmit} method="post" autoComplete="on" noValidate className="space-y-3.5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    E-Posta Adresi
+                  <label htmlFor="login-identifier" className="block text-xs font-semibold text-slate-700 mb-1">
+                    E-Posta Adresi veya Kullanıcı Adı
                   </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
-                      type="email"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="ornek@okul.k12.tr"
+                      id="login-identifier"
+                      name="username"
+                      type="text"
+                      autoComplete="username"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      value={loginIdentifier}
+                      onChange={(e) => setLoginIdentifier(e.target.value)}
+                      placeholder="ornek@okul.k12.tr veya kullanici_adi"
                       className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 min-h-[44px]"
                     />
                   </div>
@@ -474,7 +547,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-semibold text-slate-700">Şifre</label>
+                    <label htmlFor="login-password" className="block text-xs font-semibold text-slate-700">
+                      Şifre
+                    </label>
                     <button
                       type="button"
                       onClick={() => {
@@ -489,8 +564,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <div className="relative">
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
+                      id="login-password"
+                      name="password"
                       type="password"
-                      required
+                      autoComplete="current-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••"
@@ -498,6 +575,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     />
                   </div>
                 </div>
+
+                <label className="flex items-start gap-2.5 cursor-pointer select-none py-1">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="mt-0.5 w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer shrink-0"
+                  />
+                  <span className="text-xs text-slate-700 leading-snug">
+                    <strong className="font-semibold text-slate-800">Beni hatırla</strong>
+                    <span className="block text-[11px] text-slate-500">
+                      Bu cihazda oturumum açık kalsın ve şifremi tarayıcıya kaydedebileyim
+                    </span>
+                  </span>
+                </label>
 
                 <button
                   type="submit"
@@ -578,7 +670,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </span>
                 </button>
                 <p className="text-[11px] text-slate-500 text-center">
-                  Google mailinizle anında kayıt olun; isterseniz daha sonra platforma özel şifre belirleyebilirsiniz.
+                  Google mailinizle anında kayıt olun; isterseniz daha sonra profilinizden kullanıcı adı ve platform şifresi belirleyebilirsiniz.
                 </p>
               </div>
 
@@ -590,14 +682,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <div className="flex-grow border-t border-slate-200" />
               </div>
 
-              <form onSubmit={handleRegisterInitiate} className="space-y-3.5">
+              <form onSubmit={handleRegisterInitiate} method="post" autoComplete="on" noValidate className="space-y-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">Ad Soyad *</label>
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
                       type="text"
-                      required
+                      name="name"
+                      autoComplete="name"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder={selectedRole === 'teacher' ? 'Örn: Selin Öğretmen' : 'Örn: Ahmet Yılmaz'}
@@ -614,10 +707,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
                       type="email"
-                      required
+                      name="email"
+                      autoComplete="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="ornek@okul.k12.tr"
+                      className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Kullanıcı Adı (İsteğe Bağlı)
+                  </label>
+                  <div className="relative">
+                    <AtSign className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <input
+                      type="text"
+                      name="username"
+                      autoComplete="username"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder="ör: selin_hoca (sonradan da belirleyebilirsiniz)"
                       className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                     />
                   </div>
@@ -673,7 +788,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       </label>
                       <input
                         type="text"
-                        required
                         value={studentNumber}
                         onChange={(e) => setStudentNumber(e.target.value)}
                         placeholder="Örn: 1042"
@@ -703,7 +817,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                     <input
                       type="password"
-                      required
+                      name="new-password"
+                      autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••"
@@ -747,7 +862,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           {/* 2B. GOOGLE REGISTRATION ROLE COMPLETION */}
           {mode === 'google-complete' && pendingGoogleUser && (
-            <form onSubmit={handleCompleteGoogleSignup} className="space-y-3.5">
+            <form onSubmit={handleCompleteGoogleSignup} noValidate className="space-y-3.5">
               <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-xl flex items-center gap-3">
                 {pendingGoogleUser.avatarUrl ? (
                   <img
@@ -794,6 +909,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     <GraduationCap className="w-4 h-4" />
                     <span>Öğrenci (Ücretsiz)</span>
                   </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Kullanıcı Adı (İsteğe Bağlı)
+                </label>
+                <div className="relative">
+                  <AtSign className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    name="username"
+                    autoComplete="username"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="ör: ahmet_hoca (sonradan profilden eklenebilir)"
+                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                  />
                 </div>
               </div>
 
@@ -853,6 +989,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                   <input
                     type="password"
+                    name="new-password"
+                    autoComplete="new-password"
                     value={googlePlatformPassword}
                     onChange={(e) => setGooglePlatformPassword(e.target.value)}
                     placeholder="İsterseniz şimdi belirleyin (min 6 krk)"
@@ -892,7 +1030,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           {/* 3. REGISTER VERIFICATION CODE (WHEN REAL SMTP SENT CODE) */}
           {mode === 'register-verify' && (
-            <form onSubmit={handleRegisterVerifyAndComplete} className="space-y-4">
+            <form onSubmit={handleRegisterVerifyAndComplete} noValidate className="space-y-4">
               <div className="p-4 bg-indigo-50/80 border border-indigo-200 rounded-xl space-y-2">
                 <div className="flex items-center gap-2 text-indigo-900 font-bold text-xs">
                   <Mail className="w-4 h-4 text-indigo-600 shrink-0" />
@@ -915,7 +1053,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
                   <input
                     type="text"
-                    required
                     maxLength={6}
                     autoFocus
                     value={registerVerificationCode}
@@ -972,7 +1109,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           {/* 4. FORGOT PASSWORD (STEP 1: ENTER EMAIL) */}
           {mode === 'forgot' && (
-            <form onSubmit={handleForgotSubmit} className="space-y-4">
+            <form onSubmit={handleForgotSubmit} noValidate className="space-y-4">
               <p className="text-xs text-slate-600 leading-relaxed">
                 Kayıtlı e-posta adresinizi giriniz. Sistemimiz şifre sıfırlama doğrulama kodunuzu
                 e-postanıza gönderecektir.
@@ -986,7 +1123,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                   <input
                     type="email"
-                    required
                     autoFocus
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -1023,7 +1159,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
           {/* 5. RESET CODE & NEW PASSWORD (STEP 2 OF FORGOT PASSWORD) */}
           {mode === 'reset-code' && (
-            <form onSubmit={handleResetPasswordSubmit} className="space-y-3.5">
+            <form onSubmit={handleResetPasswordSubmit} noValidate className="space-y-3.5">
               <div className="p-4 bg-indigo-50/80 border border-indigo-200 rounded-xl space-y-2">
                 <div className="flex items-center gap-2 text-indigo-900 font-bold text-xs">
                   <Mail className="w-4 h-4 text-indigo-600 shrink-0" />
@@ -1042,7 +1178,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                   <input
                     type="text"
-                    required
                     maxLength={6}
                     autoFocus
                     value={resetCode}
@@ -1061,7 +1196,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                   <input
                     type="password"
-                    required
+                    name="new-password"
+                    autoComplete="new-password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Yeni şifrenizi giriniz"
@@ -1078,7 +1214,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
                   <input
                     type="password"
-                    required
+                    name="confirm-password"
+                    autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Yeni şifreyi onaylayın"

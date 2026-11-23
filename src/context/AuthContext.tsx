@@ -4,6 +4,7 @@ import { auth } from '../lib/firebase';
 import { User, SubscriptionRequest } from '../types';
 import { StorageService, INITIAL_ADMIN_EMAIL } from '../lib/storage';
 import { hashPassword, verifyPassword } from '../lib/password';
+import { validateUsernameFormat, storeBrowserCredential } from '../lib/username';
 
 export interface PendingGoogleProfile {
   uid: string;
@@ -29,28 +30,36 @@ interface AuthContextType {
   isStudent: boolean;
   isSubscriptionActive: boolean;
   remainingDays: number;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (
+    identifier: string,
+    password: string,
+    rememberMe?: boolean
+  ) => Promise<{ success: boolean; error?: string }>;
   loginWithGoogle: (options?: {
     roleForNewUser?: 'teacher' | 'student';
     name?: string;
+    username?: string;
     school?: string;
     branch?: string;
     studentNumber?: string;
     gradeLevel?: string;
     phone?: string;
     platformPassword?: string;
+    rememberMe?: boolean;
   }) => Promise<GoogleLoginResult>;
   completeGoogleRegistration: (
     profile: PendingGoogleProfile,
     details: {
       role: 'teacher' | 'student';
       name?: string;
+      username?: string;
       school?: string;
       branch?: string;
       studentNumber?: string;
       gradeLevel?: string;
       phone?: string;
       platformPassword?: string;
+      rememberMe?: boolean;
     }
   ) => Promise<{ success: boolean; error?: string }>;
   register: (
@@ -62,7 +71,9 @@ interface AuthContextType {
     branch?: string,
     studentNumber?: string,
     gradeLevel?: string,
-    phone?: string
+    phone?: string,
+    username?: string,
+    rememberMe?: boolean
   ) => Promise<{ success: boolean; error?: string }>;
   sendRegisterVerificationCode: (email: string) => Promise<{ success: boolean; delivered?: boolean; error?: string }>;
   verifyRegisterCode: (email: string, code: string) => Promise<{ success: boolean; error?: string }>;
@@ -85,26 +96,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function mapFirebaseGoogleError(err: any): string {
   const code = err?.code || '';
-  if (code === 'auth/popup-closed-by-user') {
-    return 'Google giriş penceresi kapatıldı. Devam etmek için Google hesabınızı seçin.';
+  switch (code) {
+    case 'auth/popup-closed-by-user':
+      return 'Google giriş penceresi kapatıldı. Devam etmek için Google hesabınızı seçiniz.';
+    case 'auth/cancelled-popup-request':
+      return 'Önceki Google giriş isteği iptal edildi. Lütfen tekrar deneyiniz.';
+    case 'auth/popup-blocked':
+      return 'Tarayıcınız açılır pencereyi engelledi. Lütfen açılır pencere (pop-up) izni verip tekrar deneyiniz.';
+    case 'auth/unauthorized-domain': {
+      const host = typeof window !== 'undefined' ? window.location.hostname : 'bu alan adı';
+      return `Bu alan adı (${host}) henüz Firebase Yetkili Alan Adları listesine eklenmemiş. Yönetici panelinden bu alan adının eklenmesi gerekmektedir.`;
+    }
+    case 'auth/operation-not-allowed':
+      return 'Google ile giriş yöntemi şu anda etkinleştirilmemiş. Lütfen yöneticinizle iletişime geçiniz.';
+    case 'auth/network-request-failed':
+      return 'İnternet bağlantısı kurulamadı. Bağlantınızı kontrol edip tekrar deneyiniz.';
+    case 'auth/user-disabled':
+      return 'Bu Google hesabı Google tarafından askıya alınmış veya devre dışı bırakılmıştır.';
+    case 'auth/account-exists-with-different-credential':
+      return 'Bu e-posta adresi farklı bir giriş yöntemi ile ilişkilendirilmiş görünüyor.';
+    case 'auth/too-many-requests':
+      return 'Çok fazla deneme yapıldı. Lütfen kısa bir süre bekleyip tekrar deneyiniz.';
+    case 'auth/internal-error':
+      return 'Google kimlik doğrulama servisinde geçici bir hata oluştu. Lütfen tekrar deneyiniz.';
+    default:
+      return 'Google ile giriş sırasında beklenmeyen bir hata oluştu. Lütfen tekrar deneyiniz.';
   }
-  if (code === 'auth/cancelled-popup-request') {
-    return 'Önceki Google giriş penceresi iptal edildi. Lütfen tekrar deneyin.';
-  }
-  if (code === 'auth/popup-blocked') {
-    return 'Tarayıcınız açılır pencereyi engelledi. Lütfen açılır pencere (pop-up) izni verip tekrar deneyin.';
-  }
-  if (code === 'auth/unauthorized-domain') {
-    const host = typeof window !== 'undefined' ? window.location.hostname : 'bu alan adı';
-    return `Bu alan adı (${host}) henüz Firebase Yetkili Alan Adları listesine eklenmemiş. Yönetici Firebase Console > Authentication > Authorized domains bölümünden "${host}" adresini eklemelidir.`;
-  }
-  if (code === 'auth/operation-not-allowed') {
-    return 'Firebase projesinde Google ile giriş yöntemi henüz etkinleştirilmemiş.';
-  }
-  if (code === 'auth/network-request-failed') {
-    return 'Ağ bağlantısı hatası oluştu. İnternet bağlantınızı kontrol edip tekrar deneyin.';
-  }
-  return err?.message || 'Google ile giriş sırasında bir hata oluştu.';
 }
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -117,36 +134,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-    const cleanEmail = email.trim().toLowerCase();
-    let users = StorageService.getUsers();
-    let user = users.find((u) => u.email.toLowerCase() === cleanEmail);
+  const login = async (
+    identifier: string,
+    password: string,
+    rememberMe = true
+  ): Promise<{ success: boolean; error?: string }> => {
+    const rawIdentifier = identifier.trim();
+    if (!rawIdentifier) {
+      return { success: false, error: 'Lütfen e-posta adresinizi veya kullanıcı adınızı giriniz.' };
+    }
+    if (!password) {
+      return { success: false, error: 'Lütfen şifrenizi giriniz.' };
+    }
+
+    let user = StorageService.findUserByLoginIdentifier(rawIdentifier);
 
     if (!user) {
       await StorageService.syncCloudToLocal().catch(() => {});
-      users = StorageService.getUsers();
-      user = users.find((u) => u.email.toLowerCase() === cleanEmail);
+      user = StorageService.findUserByLoginIdentifier(rawIdentifier);
     }
 
     if (!user) {
-      return { success: false, error: 'Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı.' };
+      return {
+        success: false,
+        error: rawIdentifier.includes('@')
+          ? 'Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı.'
+          : 'Bu kullanıcı adı veya e-posta adresiyle kayıtlı kullanıcı bulunamadı.',
+      };
     }
 
     if (!user.isActive) {
-      return { success: false, error: 'Hesabınız yönetici tarafından dondurulmuştur. Lütfen sistem yöneticisiyle iletişime geçin.' };
+      return {
+        success: false,
+        error: 'Hesabınız yönetici tarafından dondurulmuştur. Lütfen sistem yöneticisiyle iletişime geçiniz.',
+      };
     }
 
     if (!user.passwordHash || user.hasPlatformPassword === false) {
       return {
         success: false,
         error:
-          'Bu hesap Google ile oluşturulmuştur ve henüz platform şifresi belirlenmemiştir. Lütfen "Google ile Devam Et" butonunu kullanın veya giriş yaptıktan sonra "Platform Şifresi Belirle" menüsünden şifre oluşturun.',
+          'Bu hesap Google ile oluşturulmuştur ve henüz platform şifresi belirlenmemiştir. Lütfen "Google ile Devam Et" butonunu kullanınız veya giriş yaptıktan sonra "Platform Şifresi Belirle" menüsünden şifre oluşturunuz.',
       };
     }
 
     const validPassword = await verifyPassword(password, user.passwordHash);
     if (!validPassword) {
-      return { success: false, error: 'Girdiğiniz şifre hatalı. Lütfen kontrol edip tekrar deneyin.' };
+      return { success: false, error: 'Girdiğiniz şifre hatalı. Lütfen kontrol edip tekrar deneyiniz.' };
     }
 
     // Auto-update subscription status if expired
@@ -155,8 +189,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       StorageService.saveUser(user);
     }
 
-    StorageService.setCurrentUser(user);
+    StorageService.setRememberMePreference(rememberMe);
+    StorageService.setRememberedIdentifier(rememberMe ? rawIdentifier : null);
+    StorageService.setCurrentUser(user, rememberMe);
     setCurrentUser(user);
+
+    if (rememberMe) {
+      await storeBrowserCredential(rawIdentifier, password, user.name);
+    }
+
     return { success: true };
   };
 
@@ -165,19 +206,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     details: {
       role: 'teacher' | 'student';
       name?: string;
+      username?: string;
       school?: string;
       branch?: string;
       studentNumber?: string;
       gradeLevel?: string;
       phone?: string;
       platformPassword?: string;
+      rememberMe?: boolean;
     }
   ): Promise<{ success: boolean; error?: string }> => {
     const cleanEmail = profile.email.trim().toLowerCase();
     const cleanPassword = details.platformPassword?.trim() || '';
+    const persist = details.rememberMe ?? StorageService.getRememberMePreference();
 
     if (cleanPassword && cleanPassword.length < 6) {
       return { success: false, error: 'Platform şifresi en az 6 karakter olmalıdır.' };
+    }
+
+    let normalizedUsername = '';
+    if (details.username && details.username.trim()) {
+      const check = validateUsernameFormat(details.username);
+      if (!check.valid) {
+        return { success: false, error: check.error };
+      }
+      normalizedUsername = check.normalized;
+      await StorageService.syncCloudToLocal().catch(() => {});
+      if (!StorageService.isUsernameAvailable(normalizedUsername)) {
+        return {
+          success: false,
+          error: 'Bu kullanıcı adı başka bir kullanıcı tarafından alınmış. Lütfen farklı bir kullanıcı adı seçiniz.',
+        };
+      }
     }
 
     const users = StorageService.getUsers();
@@ -195,7 +255,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authProvider: existing.passwordHash ? 'both' : 'google',
       };
       StorageService.saveUser(merged);
-      StorageService.setCurrentUser(merged);
+      StorageService.setRememberMePreference(persist);
+      StorageService.setCurrentUser(merged, persist);
       setCurrentUser(merged);
       return { success: true };
     }
@@ -209,6 +270,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newUser: User = {
       id: 'usr_' + Date.now(),
       name: (details.name?.trim() || profile.name || cleanEmail.split('@')[0]).trim(),
+      username: normalizedUsername || undefined,
       email: cleanEmail,
       passwordHash: hashedPass,
       role: finalRole,
@@ -238,8 +300,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     StorageService.saveUser(newUser);
-    StorageService.setCurrentUser(newUser);
+    StorageService.setRememberMePreference(persist);
+    if (persist) {
+      StorageService.setRememberedIdentifier(normalizedUsername || cleanEmail);
+    }
+    StorageService.setCurrentUser(newUser, persist);
     setCurrentUser(newUser);
+
+    if (cleanPassword && persist) {
+      await storeBrowserCredential(normalizedUsername || cleanEmail, cleanPassword, newUser.name);
+    }
 
     return { success: true };
   };
@@ -257,6 +327,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: 'Google hesabınızdan e-posta bilgisi alınamadı.' };
       }
 
+      const persist = options?.rememberMe ?? StorageService.getRememberMePreference();
+
       // Ensure latest users from Firestore are available before checking
       await StorageService.syncCloudToLocal().catch(() => {});
 
@@ -267,7 +339,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!existingUser.isActive) {
           return {
             success: false,
-            error: 'Hesabınız yönetici tarafından dondurulmuştur. Lütfen sistem yöneticisiyle iletişime geçin.',
+            error: 'Hesabınız yönetici tarafından dondurulmuştur. Lütfen sistem yöneticisiyle iletişime geçiniz.',
           };
         }
 
@@ -292,7 +364,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
 
         StorageService.saveUser(updatedUser);
-        StorageService.setCurrentUser(updatedUser);
+        StorageService.setRememberMePreference(persist);
+        StorageService.setCurrentUser(updatedUser, persist);
         setCurrentUser(updatedUser);
 
         return { success: true, isNewUser: false };
@@ -317,12 +390,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const regRes = await completeGoogleRegistration(pendingProfile, {
         role: options.roleForNewUser,
         name: options.name || pendingProfile.name,
+        username: options.username,
         school: options.school,
         branch: options.branch,
         studentNumber: options.studentNumber,
         gradeLevel: options.gradeLevel,
         phone: options.phone,
         platformPassword: options.platformPassword,
+        rememberMe: persist,
       });
 
       if (!regRes.success) {
@@ -344,12 +419,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     branch?: string,
     studentNumber?: string,
     gradeLevel?: string,
-    phone?: string
+    phone?: string,
+    username?: string,
+    rememberMe = true
   ): Promise<{ success: boolean; error?: string }> => {
     const cleanEmail = email.trim().toLowerCase();
+    await StorageService.syncCloudToLocal().catch(() => {});
     const users = StorageService.getUsers();
     if (users.some((u) => u.email.toLowerCase() === cleanEmail)) {
       return { success: false, error: 'Bu e-posta adresi zaten kullanılmaktadır.' };
+    }
+
+    let normalizedUsername = '';
+    if (username && username.trim()) {
+      const check = validateUsernameFormat(username);
+      if (!check.valid) {
+        return { success: false, error: check.error };
+      }
+      normalizedUsername = check.normalized;
+      if (!StorageService.isUsernameAvailable(normalizedUsername)) {
+        return {
+          success: false,
+          error: 'Bu kullanıcı adı başka bir kullanıcı tarafından alınmış. Lütfen farklı bir kullanıcı adı seçiniz.',
+        };
+      }
     }
 
     if (password.length < 6) {
@@ -363,6 +456,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const newUser: User = {
       id: 'usr_' + Date.now(),
       name: name.trim(),
+      username: normalizedUsername || undefined,
       email: cleanEmail,
       passwordHash: hashedPassword,
       role: role,
@@ -384,8 +478,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     StorageService.saveUser(newUser);
-    StorageService.setCurrentUser(newUser);
+    StorageService.setRememberMePreference(rememberMe);
+    if (rememberMe) {
+      StorageService.setRememberedIdentifier(normalizedUsername || cleanEmail);
+    }
+    StorageService.setCurrentUser(newUser, rememberMe);
     setCurrentUser(newUser);
+
+    if (rememberMe) {
+      await storeBrowserCredential(normalizedUsername || cleanEmail, password, newUser.name);
+    }
 
     return { success: true };
   };
@@ -493,8 +595,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const updatedUsers = StorageService.getUsers();
     const user = updatedUsers.find((u) => u.email.toLowerCase() === email.toLowerCase());
     if (user) {
-      StorageService.setCurrentUser(user);
+      const persist = StorageService.getRememberMePreference();
+      StorageService.setCurrentUser(user, persist);
       setCurrentUser(user);
+      if (persist) {
+        await storeBrowserCredential(user.username || user.email, newPassword, user.name);
+      }
     }
 
     return { success: true };
@@ -509,6 +615,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const needsInitialPassword = !currentUser.passwordHash || currentUser.hasPlatformPassword === false;
 
     if (!needsInitialPassword) {
+      if (!currentPassword) {
+        return { success: false, error: 'Lütfen mevcut şifrenizi giriniz.' };
+      }
       const validCurrent = await verifyPassword(currentPassword, currentUser.passwordHash);
       if (!validCurrent) {
         return { success: false, error: 'Mevcut şifreniz hatalı.' };
@@ -528,6 +637,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (updated) {
       setCurrentUser(updated);
+      await storeBrowserCredential(updated.username || updated.email, newPassword, updated.name);
       return { success: true };
     }
 
@@ -665,7 +775,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error('useAuth yalnızca AuthProvider bileşeni içinde kullanılabilir.');
   }
   return context;
 };

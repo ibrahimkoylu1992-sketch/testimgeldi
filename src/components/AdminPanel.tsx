@@ -362,10 +362,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   };
 
   const filteredUsers = users.filter((u) => {
+    const q = userSearch.toLowerCase();
     const matchesSearch =
-      u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
-      (u.school && u.school.toLowerCase().includes(userSearch.toLowerCase())) ||
+      u.name.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      (u.username && u.username.toLowerCase().includes(q)) ||
+      (u.school && u.school.toLowerCase().includes(q)) ||
       (u.studentNumber && u.studentNumber.includes(userSearch));
     const matchesRole = roleFilter === 'all' || u.role === roleFilter;
     return matchesSearch && matchesRole;
@@ -703,7 +705,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[11px] text-slate-500 font-mono">{user.email}</span>
+                              <span className="text-[11px] text-slate-500 font-mono">
+                                {user.username ? `@${user.username} · ` : ''}
+                                {user.email}
+                              </span>
                             </div>
                           </div>
                         </td>

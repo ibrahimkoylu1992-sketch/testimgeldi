@@ -1,19 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { StorageService } from '../lib/storage';
+import { validateUsernameFormat } from '../lib/username';
 import { useToast } from './Toast';
 import {
   User,
   Mail,
+  AtSign,
   Phone,
   School,
-  BookOpen,
   Plus,
   X,
   Check,
-  ShieldCheck,
-  Clock,
-  GraduationCap,
   MessageSquare,
   Send,
 } from 'lucide-react';
@@ -24,6 +22,8 @@ interface ProfileModalProps {
   onClose: () => void;
   onOpenSupportTicket?: () => void;
 }
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export const ProfileModal: React.FC<ProfileModalProps> = ({
   isOpen,
@@ -43,36 +43,31 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   } = useAuth();
   const { showToast } = useToast();
 
-  if (!isOpen || !currentUser) return null;
+  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [school, setSchool] = useState('');
+  const [studentNumber, setStudentNumber] = useState('');
+  const [gradeLevel, setGradeLevel] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const [name, setName] = useState(currentUser.name);
-  const [email, setEmail] = useState(currentUser.email);
-  const [phone, setPhone] = useState(currentUser.phone || '');
-  const [school, setSchool] = useState(currentUser.school || '');
-  const [studentNumber, setStudentNumber] = useState(currentUser.studentNumber || '');
-  const [gradeLevel, setGradeLevel] = useState(currentUser.gradeLevel || '');
-
-  // Teacher custom branches, classes, and schools
-  const [branches, setBranches] = useState<string[]>(() =>
-    StorageService.getUserBranches(currentUser)
-  );
+  const [branches, setBranches] = useState<string[]>([]);
   const [newBranch, setNewBranch] = useState('');
 
-  const [classes, setClasses] = useState<string[]>(() =>
-    StorageService.getUserClasses(currentUser)
-  );
+  const [classes, setClasses] = useState<string[]>([]);
   const [newClass, setNewClass] = useState('');
 
-  const [schools, setSchools] = useState<string[]>(() =>
-    StorageService.getUserSchools(currentUser)
-  );
+  const [schools, setSchools] = useState<string[]>([]);
   const [newSchoolInput, setNewSchoolInput] = useState('');
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   // Keep state synchronized with currentUser whenever opened
-  React.useEffect(() => {
-    if (currentUser) {
+  useEffect(() => {
+    if (isOpen && currentUser) {
       setName(currentUser.name);
+      setUsername(currentUser.username || '');
       setEmail(currentUser.email);
       setPhone(currentUser.phone || '');
       setSchool(currentUser.school || '');
@@ -81,8 +76,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       setBranches(StorageService.getUserBranches(currentUser));
       setClasses(StorageService.getUserClasses(currentUser));
       setSchools(StorageService.getUserSchools(currentUser));
+      setErrorMsg('');
     }
   }, [currentUser, isOpen]);
+
+  if (!isOpen || !currentUser) return null;
+
+  const usernameCheck = username.trim() ? validateUsernameFormat(username) : { valid: true, normalized: '' };
+  const isLiveUsernameAvailable =
+    !usernameCheck.normalized ||
+    !usernameCheck.valid ||
+    StorageService.isUsernameAvailable(usernameCheck.normalized, currentUser.id);
 
   const handleAddBranch = () => {
     const trimmed = newBranch.trim();
@@ -155,13 +159,54 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     showToast(`"${sch}" okulu listeden kaldırıldı.`, 'info');
   };
 
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg('');
+
+    if (!name.trim()) {
+      setErrorMsg('Lütfen adınızı ve soyadınızı giriniz.');
+      return;
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(cleanEmail)) {
+      setErrorMsg('Lütfen geçerli bir e-posta adresi giriniz.');
+      return;
+    }
+
+    let normalizedUsername = '';
+    if (username.trim()) {
+      const check = validateUsernameFormat(username);
+      if (!check.valid) {
+        setErrorMsg(check.error || 'Geçersiz kullanıcı adı.');
+        return;
+      }
+      normalizedUsername = check.normalized;
+    }
+
+    setSaving(true);
+    await StorageService.syncCloudToLocal().catch(() => {});
+
+    if (normalizedUsername && !StorageService.isUsernameAvailable(normalizedUsername, currentUser.id)) {
+      setSaving(false);
+      setErrorMsg('Bu kullanıcı adı başka bir kullanıcı tarafından kullanılmaktadır. Lütfen farklı bir kullanıcı adı deneyiniz.');
+      return;
+    }
+
+    const emailConflict = StorageService.getUsers().some(
+      (u) => u.id !== currentUser.id && u.email.toLowerCase() === cleanEmail
+    );
+    if (emailConflict) {
+      setSaving(false);
+      setErrorMsg('Bu e-posta adresi başka bir kullanıcı hesabına kayıtlıdır.');
+      return;
+    }
 
     const selectedSchool = school.trim() || schools[0] || 'Cumhuriyet Ortaokulu';
     const updatedUser = StorageService.updateUser(currentUser.id, {
       name: name.trim(),
-      email: email.trim().toLowerCase(),
+      username: normalizedUsername || undefined,
+      email: cleanEmail,
       phone: phone.trim(),
       school: selectedSchool,
       studentNumber: currentUser.role === 'student' ? studentNumber.trim() : undefined,
@@ -173,6 +218,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       mySchools: schools,
       customSchools: schools,
     });
+
+    setSaving(false);
 
     if (updatedUser) {
       switchUser(updatedUser);
@@ -195,7 +242,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             <div>
               <h3 className="font-bold text-slate-900 text-base">Kullanıcı Profilim & Tercihler</h3>
               <p className="text-xs text-slate-500">
-                Kişisel bilgilerinizi, telefonunuzu ve ilgilendiğiniz ders/sınıfları yönetin.
+                Kişisel bilgilerinizi, kullanıcı adınızı ve ilgilendiğiniz ders/sınıfları yönetin.
               </p>
             </div>
           </div>
@@ -207,7 +254,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           </button>
         </div>
 
-        <form onSubmit={handleSaveProfile} className="p-6 space-y-6 max-h-[75vh] overflow-y-auto text-xs">
+        <form onSubmit={handleSaveProfile} noValidate className="p-6 space-y-6 max-h-[75vh] overflow-y-auto text-xs">
+          {errorMsg && (
+            <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-start gap-2">
+              <span className="font-bold shrink-0">Hata:</span>
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
           {/* Kişisel Bilgiler */}
           <div className="space-y-4">
             <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">
@@ -216,31 +270,65 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block font-semibold text-slate-700 mb-1">Ad Soyad</label>
+                <label className="block font-semibold text-slate-700 mb-1">Ad Soyad *</label>
                 <div className="relative">
                   <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <input
                     type="text"
-                    required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none"
+                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 min-h-[38px]"
                   />
                 </div>
               </div>
 
               <div>
                 <label className="block font-semibold text-slate-700 mb-1">
-                  E-Posta Adresi
+                  Kullanıcı Adı (Benzersiz · İsteğe Bağlı)
+                </label>
+                <div className="relative">
+                  <AtSign className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="ör: ahmet_hoca"
+                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 min-h-[38px]"
+                  />
+                </div>
+                {username.trim() ? (
+                  !usernameCheck.valid ? (
+                    <span className="text-[10px] text-rose-600 mt-0.5 block">{usernameCheck.error}</span>
+                  ) : !isLiveUsernameAvailable ? (
+                    <span className="text-[10px] text-rose-600 mt-0.5 block">
+                      @{usernameCheck.normalized} kullanıcı adı zaten alınmış.
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-emerald-700 mt-0.5 block">
+                      @{usernameCheck.normalized} kullanılabilir — girişte e-posta yerine yazabilirsiniz.
+                    </span>
+                  )
+                ) : (
+                  <span className="text-[10px] text-slate-400 mt-0.5 block">
+                    Belirlerseniz girişte kullanıcı adınız + şifrenizle de giriş yapabilirsiniz.
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  E-Posta Adresi *
                 </label>
                 <div className="relative">
                   <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                   <input
                     type="email"
-                    required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none"
+                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 min-h-[38px]"
                   />
                 </div>
               </div>
@@ -256,7 +344,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="0555 123 4567"
-                    className="w-full pl-9 pr-3 py-2 text-xs font-mono border border-slate-300 rounded-lg focus:outline-none"
+                    className="w-full pl-9 pr-3 py-2 text-xs font-mono border border-slate-300 rounded-lg focus:outline-none min-h-[38px]"
                   />
                 </div>
                 <span className="text-[10px] text-slate-400 mt-0.5 block">
@@ -264,7 +352,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 </span>
               </div>
 
-              <div>
+              <div className="sm:col-span-2">
                 <label className="block font-semibold text-slate-700 mb-1">Okul Adı</label>
                 <div className="relative">
                   <School className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -273,7 +361,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     value={school}
                     onChange={(e) => setSchool(e.target.value)}
                     placeholder="Örn: Cumhuriyet Ortaokulu"
-                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none"
+                    className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none min-h-[38px]"
                   />
                 </div>
               </div>
@@ -502,7 +590,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           {/* Footer actions */}
           <div className="pt-4 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-center justify-between gap-3">
             <span className="text-[11px] text-slate-400">
-              testimgeldi v2.4 · Güvenli Profil Yönetimi
+              testimgeldi · Güvenli Profil Yönetimi
             </span>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
               <button
@@ -514,10 +602,11 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               </button>
               <button
                 type="submit"
-                className="w-full sm:w-auto min-h-[42px] px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                disabled={saving}
+                className="w-full sm:w-auto min-h-[42px] px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
               >
                 <Check className="w-4 h-4" />
-                Profili & Tercihleri Kaydet
+                {saving ? 'Kaydediliyor...' : 'Profili & Tercihleri Kaydet'}
               </button>
             </div>
           </div>
