@@ -53,6 +53,11 @@ export function validateUsernameFormat(raw: string): {
   return { valid: true, normalized };
 }
 
+export function isPasswordCredentialSupported(): boolean {
+  if (typeof window === 'undefined') return false;
+  return 'PasswordCredential' in window && !!navigator.credentials;
+}
+
 /**
  * Prompts browser password managers (Chrome / Google Password Manager / Android Autofill)
  * to save or update login credentials when supported.
@@ -81,5 +86,30 @@ export async function storeBrowserCredential(
     }
   } catch {
     // Browser may block or skip depending on user preferences; ignore silently
+  }
+}
+
+/**
+ * Retrieves saved credentials from browser / Google Password Manager when supported.
+ */
+export async function getSavedBrowserCredential(
+  mediation: 'silent' | 'optional' | 'required' = 'optional'
+): Promise<{ id: string; password: string } | null> {
+  if (typeof window === 'undefined') return null;
+  try {
+    if (!('PasswordCredential' in window) || !navigator.credentials?.get) {
+      return null;
+    }
+    const cred = (await navigator.credentials.get({
+      password: true,
+      mediation,
+    } as CredentialRequestOptions)) as (Credential & { id?: string; password?: string; type?: string }) | null;
+
+    if (cred && cred.id && typeof cred.password === 'string' && cred.password.length > 0) {
+      return { id: cred.id, password: cred.password };
+    }
+    return null;
+  } catch {
+    return null;
   }
 }

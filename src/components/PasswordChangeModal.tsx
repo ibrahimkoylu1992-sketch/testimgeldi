@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from './Toast';
-import { X, Lock, Check, ShieldCheck } from 'lucide-react';
+import { X, Lock, Check, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 
 interface PasswordChangeModalProps {
   isOpen: boolean;
@@ -17,6 +17,9 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const needsInitialPassword = !currentUser?.passwordHash || currentUser?.hasPlatformPassword === false;
 
@@ -26,6 +29,9 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
       setNewPassword('');
       setConfirmPassword('');
       setErrorMsg('');
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
     }
   }, [isOpen]);
 
@@ -132,15 +138,26 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
           {!needsInitialPassword && (
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Mevcut Şifre</label>
-              <input
-                type="password"
-                name="current-password"
-                autoComplete="current-password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                placeholder="••••••"
-                className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 min-h-[42px]"
-              />
+              <div className="relative">
+                <input
+                  type={showCurrentPassword ? 'text' : 'password'}
+                  name="current-password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="••••••"
+                  className="w-full pl-3 pr-10 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 min-h-[42px]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowCurrentPassword((prev) => !prev)}
+                  aria-label={showCurrentPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                  title={showCurrentPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-700 rounded-md transition-colors cursor-pointer"
+                >
+                  {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
             </div>
           )}
 
@@ -148,30 +165,52 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               {needsInitialPassword ? 'Platform Şifreniz (En az 6 karakter)' : 'Yeni Şifre (En az 6 karakter)'}
             </label>
-            <input
-              type="password"
-              name="new-password"
-              autoComplete="new-password"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="••••••"
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 min-h-[42px]"
-            />
+            <div className="relative">
+              <input
+                type={showNewPassword ? 'text' : 'password'}
+                name="new-password"
+                autoComplete="new-password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="••••••"
+                className="w-full pl-3 pr-10 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 min-h-[42px]"
+              />
+              <button
+                type="button"
+                onClick={() => setShowNewPassword((prev) => !prev)}
+                aria-label={showNewPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                title={showNewPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-700 rounded-md transition-colors cursor-pointer"
+              >
+                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               {needsInitialPassword ? 'Platform Şifresi Tekrar' : 'Yeni Şifre Tekrar'}
             </label>
-            <input
-              type="password"
-              name="confirm-password"
-              autoComplete="new-password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              placeholder="••••••"
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 min-h-[42px]"
-            />
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                name="confirm-password"
+                autoComplete="new-password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="••••••"
+                className="w-full pl-3 pr-10 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 min-h-[42px]"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                aria-label={showConfirmPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                title={showConfirmPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-700 rounded-md transition-colors cursor-pointer"
+              >
+                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-2">

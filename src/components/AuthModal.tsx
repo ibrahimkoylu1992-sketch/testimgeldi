@@ -1,7 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth, PendingGoogleProfile } from '../context/AuthContext';
 import { StorageService } from '../lib/storage';
-import { validateUsernameFormat } from '../lib/username';
+import {
+  validateUsernameFormat,
+  getSavedBrowserCredential,
+  isPasswordCredentialSupported,
+} from '../lib/username';
 import { useToast } from './Toast';
 import {
   X,
@@ -18,6 +22,8 @@ import {
   RotateCw,
   Send,
   ShieldCheck,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 interface AuthModalProps {
@@ -101,22 +107,82 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Password visibility toggles
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
+  const [showRegisterPassword, setShowRegisterPassword] = useState(false);
+  const [showGooglePassword, setShowGooglePassword] = useState(false);
+  const [showResetPassword, setShowResetPassword] = useState(false);
+  const [showResetConfirmPassword, setShowResetConfirmPassword] = useState(false);
+  const [fetchingCredential, setFetchingCredential] = useState(false);
+
+  const passwordManuallyEditedRef = useRef(false);
+  const supportsCredentialPicker = isPasswordCredentialSupported();
+
   useEffect(() => {
     if (isOpen) {
       setMode(initialMode);
       setErrorMsg('');
       setPendingGoogleUser(null);
       setGooglePlatformPassword('');
+      setShowLoginPassword(false);
+      setShowRegisterPassword(false);
+      setShowGooglePassword(false);
+      setShowResetPassword(false);
+      setShowResetConfirmPassword(false);
+      passwordManuallyEditedRef.current = false;
+      setPassword('');
+
       const pref = StorageService.getRememberMePreference();
       setRememberMe(pref);
       if (pref) {
         const savedId = StorageService.getRememberedIdentifier();
         if (savedId) setLoginIdentifier(savedId);
+      } else {
+        setLoginIdentifier('');
       }
     }
   }, [isOpen, initialMode]);
 
+  // Retrieve saved password from Chrome / Google Password Manager when opening login mode
+  useEffect(() => {
+    if (!isOpen || mode !== 'login') return;
+    if (!StorageService.getRememberMePreference()) return;
+    if (!isPasswordCredentialSupported()) return;
+
+    let cancelled = false;
+    (async () => {
+      const cred = await getSavedBrowserCredential('optional');
+      if (cancelled || !cred) return;
+      setLoginIdentifier((prev) => prev || cred.id);
+      if (!passwordManuallyEditedRef.current) {
+        setPassword((prev) => prev || cred.password);
+      }
+      setRememberMe(true);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, mode]);
+
   if (!isOpen) return null;
+
+  const handleFetchSavedCredential = async () => {
+    setErrorMsg('');
+    setFetchingCredential(true);
+    const cred = await getSavedBrowserCredential('required');
+    setFetchingCredential(false);
+
+    if (cred) {
+      passwordManuallyEditedRef.current = true;
+      setLoginIdentifier(cred.id);
+      setPassword(cred.password);
+      setRememberMe(true);
+      showToast('Kayıtlı giriş bilgileriniz tarayıcıdan getirildi.', 'success');
+    } else {
+      showToast('Bu site için tarayıcı şifre yöneticisinde kayıtlı şifre bulunamadı.', 'info');
+    }
+  };
 
   // GOOGLE LOGIN / REGISTER
   const handleGoogleAuth = async (fromMode: 'login' | 'register') => {
@@ -524,13 +590,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
               <form onSubmit={handleLoginSubmit} method="post" autoComplete="on" noValidate className="space-y-3.5">
                 <div>
-                  <label htmlFor="login-identifier" className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="username" className="block text-xs font-semibold text-slate-700 mb-1">
                     E-Posta Adresi veya Kullanıcı Adı
                   </label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
-                      id="login-identifier"
+                      id="username"
                       name="username"
                       type="text"
                       autoComplete="username"
@@ -547,32 +613,58 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label htmlFor="login-password" className="block text-xs font-semibold text-slate-700">
+                    <label htmlFor="password" className="block text-xs font-semibold text-slate-700">
                       Şifre
                     </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setMode('forgot');
-                        setErrorMsg('');
-                      }}
-                      className="text-xs text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
-                    >
-                      Şifremi unuttum?
-                    </button>
+                    <div className="flex items-center gap-3">
+                      {supportsCredentialPicker && (
+                        <button
+                          type="button"
+                          onClick={handleFetchSavedCredential}
+                          disabled={fetchingCredential}
+                          className="text-xs text-slate-600 hover:text-indigo-700 hover:underline inline-flex items-center gap-1 cursor-pointer disabled:opacity-60"
+                          title="Google / Tarayıcı şifre yöneticisinden kayıtlı şifreyi getir"
+                        >
+                          <KeyRound className="w-3 h-3" />
+                          <span>{fetchingCredential ? 'Getiriliyor...' : 'Kayıtlı Şifre Getir'}</span>
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMode('forgot');
+                          setErrorMsg('');
+                        }}
+                        className="text-xs text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+                      >
+                        Şifremi unuttum?
+                      </button>
+                    </div>
                   </div>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
-                      id="login-password"
+                      id="password"
                       name="password"
-                      type="password"
+                      type={showLoginPassword ? 'text' : 'password'}
                       autoComplete="current-password"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={(e) => {
+                        passwordManuallyEditedRef.current = true;
+                        setPassword(e.target.value);
+                      }}
                       placeholder="••••••"
-                      className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 min-h-[44px]"
+                      className="w-full pl-9 pr-10 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 min-h-[44px]"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowLoginPassword((prev) => !prev)}
+                      aria-label={showLoginPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                      title={showLoginPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-700 rounded-md transition-colors cursor-pointer"
+                    >
+                      {showLoginPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
@@ -814,16 +906,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     Şifre Belirleyin (En az 6 karakter) *
                   </label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
-                      type="password"
+                      type={showRegisterPassword ? 'text' : 'password'}
                       name="new-password"
                       autoComplete="new-password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••"
-                      className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                      className="w-full pl-9 pr-10 py-2 text-sm border border-slate-300 rounded-lg min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowRegisterPassword((prev) => !prev)}
+                      aria-label={showRegisterPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                      title={showRegisterPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-700 rounded-md transition-colors cursor-pointer"
+                    >
+                      {showRegisterPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
@@ -986,16 +1087,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   Platforma Özel Şifre (İsteğe Bağlı)
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
-                    type="password"
+                    type={showGooglePassword ? 'text' : 'password'}
                     name="new-password"
                     autoComplete="new-password"
                     value={googlePlatformPassword}
                     onChange={(e) => setGooglePlatformPassword(e.target.value)}
                     placeholder="İsterseniz şimdi belirleyin (min 6 krk)"
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full pl-9 pr-10 py-2 text-sm border border-slate-300 rounded-lg min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowGooglePassword((prev) => !prev)}
+                    aria-label={showGooglePassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                    title={showGooglePassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-700 rounded-md transition-colors cursor-pointer"
+                  >
+                    {showGooglePassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
                 <p className="text-[11px] text-slate-500 mt-1">
                   Boş bırakırsanız dilediğiniz zaman profilinizdeki <strong>Platform Şifresi Belirle</strong> menüsünden oluşturabilirsiniz.
@@ -1193,16 +1303,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   Yeni Şifreniz (En az 6 karakter) *
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
-                    type="password"
+                    type={showResetPassword ? 'text' : 'password'}
                     name="new-password"
                     autoComplete="new-password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="Yeni şifrenizi giriniz"
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full pl-9 pr-10 py-2 text-sm border border-slate-300 rounded-lg min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetPassword((prev) => !prev)}
+                    aria-label={showResetPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                    title={showResetPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-700 rounded-md transition-colors cursor-pointer"
+                  >
+                    {showResetPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
@@ -1211,16 +1330,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   Yeni Şifre Tekrar *
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
-                    type="password"
+                    type={showResetConfirmPassword ? 'text' : 'password'}
                     name="confirm-password"
                     autoComplete="new-password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Yeni şifreyi onaylayın"
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-slate-300 rounded-lg min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                    className="w-full pl-9 pr-10 py-2 text-sm border border-slate-300 rounded-lg min-h-[44px] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowResetConfirmPassword((prev) => !prev)}
+                    aria-label={showResetConfirmPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                    title={showResetConfirmPassword ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-700 rounded-md transition-colors cursor-pointer"
+                  >
+                    {showResetConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
