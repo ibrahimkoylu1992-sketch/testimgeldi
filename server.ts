@@ -566,7 +566,7 @@ app.post('/api/admin/test-email', async (req, res) => {
           </div>
         </div>
       `,
-      text: `testimgeldi Test E-Postası Başılı! Kod: ${testCode}`,
+      text: `testimgeldi Test E-Postası Başarılı! Kod: ${testCode}`,
     });
 
     return res.json({
