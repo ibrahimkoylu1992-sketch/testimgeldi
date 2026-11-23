@@ -32,6 +32,8 @@ import {
   ExternalLink,
   FileText,
   Trash2,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { SupportTicket } from '../types/support';
 
@@ -89,9 +91,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
   const [smtpPass, setSmtpPass] = useState('');
   const [smtpSecure, setSmtpSecure] = useState(false);
   const [smtpConfigured, setSmtpConfigured] = useState(false);
+  const [smtpRuntime, setSmtpRuntime] = useState<'express' | 'netlify' | 'unknown'>('unknown');
   const [testingEmail, setTestingEmail] = useState(false);
   const [savingSmtp, setSavingSmtp] = useState(false);
   const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [showGmailPass, setShowGmailPass] = useState(false);
+  const [showSmtpPass, setShowSmtpPass] = useState(false);
 
   // Load current SMTP configuration from server
   React.useEffect(() => {
@@ -100,7 +105,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
       .then((data) => {
         if (data) {
           setSmtpConfigured(!!data.isConfigured);
-          if (data.provider === 'custom') setSmtpProvider('custom');
+          if (data.runtime === 'netlify' || data.runtime === 'express') {
+            setSmtpRuntime(data.runtime);
+          }
+          if (data.provider === 'custom' || data.provider === 'gmail') setSmtpProvider(data.provider);
           if (data.gmailUser) setGmailUser(data.gmailUser);
           if (data.host) setSmtpHost(data.host);
           if (data.port) setSmtpPort(String(data.port));
@@ -137,8 +145,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
 
       if (data.success) {
         setSmtpConfigured(true);
-        showToast('E-posta (SMTP) ayarları kaydedildi. Şimdi test maili gönderebilirsiniz!', 'success');
+        showToast(data.message || 'E-posta (SMTP) ayarları kaydedildi. Şimdi test maili gönderebilirsiniz!', 'success');
       } else {
+        setTestResult({ success: false, message: data.error || 'Ayar kaydedilemedi.' });
         showToast(data.error || 'Ayar kaydedilemedi.', 'error');
       }
     } catch {
@@ -151,11 +160,32 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
     setTestingEmail(true);
     setTestResult(null);
 
+    const hasInlineOverride =
+      (smtpProvider === 'gmail' && gmailUser.trim() && gmailAppPassword.trim()) ||
+      (smtpProvider === 'custom' && smtpHost.trim() && smtpUser.trim() && smtpPass.trim());
+
     try {
       const res = await fetch('/api/admin/test-email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetEmail: INITIAL_ADMIN_EMAIL }),
+        body: JSON.stringify({
+          targetEmail: INITIAL_ADMIN_EMAIL,
+          ...(hasInlineOverride
+            ? {
+                smtpOverride: {
+                  provider: smtpProvider,
+                  gmailUser,
+                  gmailAppPassword,
+                  host: smtpHost,
+                  port: parseInt(smtpPort || '465', 10),
+                  secure: smtpSecure,
+                  user: smtpUser,
+                  pass: smtpPass,
+                  enabled: true,
+                },
+              }
+            : {}),
+        }),
       });
       const data = await res.json();
       setTestingEmail(false);
@@ -167,7 +197,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
         setTestResult({ success: false, message: data.error || 'E-posta gönderilemedi.' });
         showToast(data.error || 'E-posta gönderilemedi.', 'error');
       }
-    } catch (err: any) {
+    } catch {
       setTestingEmail(false);
       setTestResult({ success: false, message: 'Sunucuya bağlanılamadı.' });
       showToast('Test e-postası gönderilemedi.', 'error');
@@ -983,14 +1013,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     <label className="block text-xs font-semibold text-slate-700 mb-1">
                       16 Haneli Google Uygulama Şifresi (App Password) *
                     </label>
-                    <input
-                      type="password"
-                      required
-                      value={gmailAppPassword}
-                      onChange={(e) => setGmailAppPassword(e.target.value)}
-                      placeholder="xxxx xxxx xxxx xxxx"
-                      className="w-full px-3 py-2 text-xs font-mono tracking-widest border border-slate-300 rounded-lg bg-white min-h-[40px]"
-                    />
+                    <div className="relative">
+                      <input
+                        type={showGmailPass ? 'text' : 'password'}
+                        required
+                        value={gmailAppPassword}
+                        onChange={(e) => setGmailAppPassword(e.target.value)}
+                        placeholder="xxxx xxxx xxxx xxxx"
+                        className="w-full pl-3 pr-10 py-2 text-xs font-mono tracking-widest border border-slate-300 rounded-lg bg-white min-h-[40px]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowGmailPass((p) => !p)}
+                        aria-label={showGmailPass ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                      >
+                        {showGmailPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
                     <span className="text-[10px] text-slate-400 mt-0.5 block">
                       Normal Google şifreniz değil, Uygulama Şifresi olmalıdır.
                     </span>
@@ -998,6 +1038,44 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                 </>
               ) : (
                 <>
+                  <div className="p-3 bg-indigo-50/80 border border-indigo-200 rounded-lg text-xs text-indigo-950 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="font-bold block">info@testimgeldi.com (GoDaddy / Secureserver) Hızlı Kurulum</span>
+                      <span className="text-[11px] text-indigo-800">
+                        Sunucu: <code className="font-mono bg-white/80 px-1 rounded">smtpout.secureserver.net</code> · Port: <code className="font-mono bg-white/80 px-1 rounded">465</code> (SSL)
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSmtpHost('smtpout.secureserver.net');
+                        setSmtpPort('465');
+                        setSmtpSecure(true);
+                        if (!smtpUser) setSmtpUser('info@testimgeldi.com');
+                      }}
+                      className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-[11px] rounded-lg shrink-0 cursor-pointer"
+                    >
+                      GoDaddy Bilgilerini Doldur
+                    </button>
+                  </div>
+
+                  {smtpRuntime === 'netlify' && !smtpConfigured && (
+                    <div className="p-3 bg-amber-50 border border-amber-300 rounded-lg text-[11px] text-amber-900 space-y-1">
+                      <span className="font-bold block">Canlı Netlify Kalıcı Kurulum Adımı:</span>
+                      <p>
+                        Aşağıdaki form ile şifrenizi hemen test edebilirsiniz. Kalıcı aktif olması için <strong>Netlify → Site configuration → Environment variables</strong> bölümüne şu değerleri ekleyip redeploy yapın:
+                      </p>
+                      <div className="font-mono bg-white/80 border border-amber-200 rounded p-2 text-[10px] leading-relaxed">
+                        SMTP_HOST=smtpout.secureserver.net<br />
+                        SMTP_PORT=465<br />
+                        SMTP_SECURE=true<br />
+                        SMTP_USER=info@testimgeldi.com<br />
+                        SMTP_PASS=eposta_sifreniz<br />
+                        SMTP_FROM=&quot;testimgeldi&quot; &lt;info@testimgeldi.com&gt;
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-2">
                       <label className="block text-xs font-semibold text-slate-700 mb-1">SMTP Host *</label>
@@ -1006,7 +1084,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         required
                         value={smtpHost}
                         onChange={(e) => setSmtpHost(e.target.value)}
-                        placeholder="smtp-relay.brevo.com / smtp.gmail.com"
+                        placeholder="smtpout.secureserver.net"
                         className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white min-h-[40px]"
                       />
                     </div>
@@ -1017,7 +1095,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                         required
                         value={smtpPort}
                         onChange={(e) => setSmtpPort(e.target.value)}
-                        placeholder="587"
+                        placeholder="465"
                         className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white min-h-[40px]"
                       />
                     </div>
@@ -1037,14 +1115,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 mb-1">SMTP Şifresi *</label>
-                      <input
-                        type="password"
-                        required
-                        value={smtpPass}
-                        onChange={(e) => setSmtpPass(e.target.value)}
-                        placeholder="••••••••••••"
-                        className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg bg-white min-h-[40px]"
-                      />
+                      <div className="relative">
+                        <input
+                          type={showSmtpPass ? 'text' : 'password'}
+                          required
+                          value={smtpPass}
+                          onChange={(e) => setSmtpPass(e.target.value)}
+                          placeholder="••••••••••••"
+                          className="w-full pl-3 pr-10 py-2 text-xs border border-slate-300 rounded-lg bg-white min-h-[40px]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSmtpPass((p) => !p)}
+                          aria-label={showSmtpPass ? 'Şifreyi gizle' : 'Şifreyi göster'}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+                        >
+                          {showSmtpPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
                     </div>
                   </div>
 

@@ -462,6 +462,7 @@ app.get('/api/admin/smtp-config', (_req, res) => {
     user: fileConfig?.user || process.env.SMTP_USER || '',
     fromAddress: fileConfig?.fromAddress || process.env.SMTP_FROM || '',
     enabled: fileConfig?.enabled ?? isConfigured,
+    runtime: 'express',
   });
 });
 
@@ -502,7 +503,35 @@ app.post('/api/admin/smtp-config', (req, res) => {
 app.post('/api/admin/test-email', async (req, res) => {
   try {
     const targetEmail = req.body.targetEmail || 'ibrahimkoylu1992@gmail.com';
-    const transporter = getEmailTransporter();
+    const override = req.body.smtpOverride;
+
+    let transporter = null;
+    let overrideFrom = '';
+
+    if (override && override.provider === 'gmail' && override.gmailUser && override.gmailAppPassword) {
+      transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: String(override.gmailUser).trim(),
+          pass: String(override.gmailAppPassword).trim().replace(/\s+/g, ''),
+        },
+      });
+      overrideFrom = `"testimgeldi" <${String(override.gmailUser).trim()}>`;
+    } else if (override && override.host && override.user && override.pass) {
+      const p = parseInt(String(override.port || '465'), 10);
+      transporter = nodemailer.createTransport({
+        host: String(override.host).trim(),
+        port: p,
+        secure: override.secure === true || p === 465,
+        auth: {
+          user: String(override.user).trim(),
+          pass: String(override.pass).trim(),
+        },
+      });
+      overrideFrom = `"testimgeldi" <${String(override.user).trim()}>`;
+    } else {
+      transporter = getEmailTransporter();
+    }
 
     if (!transporter) {
       return res.status(400).json({
@@ -512,11 +541,12 @@ app.post('/api/admin/test-email', async (req, res) => {
 
     const testCode = Math.floor(100000 + Math.random() * 900000).toString();
     const fileConfig = loadSmtpConfig();
-    const from = fileConfig?.fromAddress || (fileConfig?.user ? `"testimgeldi" <${fileConfig.user}>` : null) || fileConfig?.gmailUser || process.env.SMTP_FROM || process.env.GMAIL_USER || '"testimgeldi" <info@testimgeldi.com>';
+    const from = overrideFrom || fileConfig?.fromAddress || (fileConfig?.user ? `"testimgeldi" <${fileConfig.user}>` : null) || fileConfig?.gmailUser || process.env.SMTP_FROM || process.env.GMAIL_USER || '"testimgeldi" <info@testimgeldi.com>';
 
     await transporter.sendMail({
       from,
       to: targetEmail,
+      replyTo: 'info@testimgeldi.com',
       subject: 'testimgeldi - Canlı E-Posta Sunucusu Test Mesajı',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px;">
@@ -536,7 +566,7 @@ app.post('/api/admin/test-email', async (req, res) => {
           </div>
         </div>
       `,
-      text: `testimgeldi Test E-Postası Başarılı! Kod: ${testCode}`,
+      text: `testimgeldi Test E-Postası Başılı! Kod: ${testCode}`,
     });
 
     return res.json({

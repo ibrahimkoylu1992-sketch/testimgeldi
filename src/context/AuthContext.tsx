@@ -75,10 +75,10 @@ interface AuthContextType {
     username?: string,
     rememberMe?: boolean
   ) => Promise<{ success: boolean; error?: string }>;
-  sendRegisterVerificationCode: (email: string) => Promise<{ success: boolean; delivered?: boolean; error?: string }>;
+  sendRegisterVerificationCode: (email: string) => Promise<{ success: boolean; delivered?: boolean; isSmtpConfigured?: boolean; error?: string }>;
   verifyRegisterCode: (email: string, code: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
-  requestPasswordReset: (email: string) => Promise<{ success: boolean; delivered?: boolean; error?: string }>;
+  requestPasswordReset: (email: string) => Promise<{ success: boolean; delivered?: boolean; isSmtpConfigured?: boolean; error?: string }>;
   resetPasswordWithCode: (email: string, code: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   updatePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   switchUser: (user: User) => void;
@@ -494,7 +494,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const sendRegisterVerificationCode = async (
     email: string
-  ): Promise<{ success: boolean; delivered?: boolean; error?: string }> => {
+  ): Promise<{ success: boolean; delivered?: boolean; isSmtpConfigured?: boolean; error?: string }> => {
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !cleanEmail.includes('@')) {
       return { success: false, error: 'Lütfen geçerli bir e-posta adresi giriniz.' };
@@ -509,6 +509,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const code = StorageService.createEmailVerificationCode(cleanEmail, 'register');
 
     let delivered = false;
+    let isSmtpConfigured = false;
+    let smtpError: string | undefined;
     try {
       const resp = await fetch('/api/auth/send-verification-email', {
         method: 'POST',
@@ -520,13 +522,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (contentType.includes('application/json')) {
           const data = await resp.json();
           delivered = Boolean(data?.delivered);
+          isSmtpConfigured = Boolean(data?.isSmtpConfigured);
+          if (!delivered && (data?.smtpError || data?.message)) {
+            smtpError = data.smtpError || data.message;
+          }
         }
       }
     } catch (e) {
       console.warn('Real email dispatch network error:', e);
     }
 
-    return { success: true, delivered };
+    return { success: true, delivered, isSmtpConfigured, error: smtpError };
   };
 
   const verifyRegisterCode = async (email: string, code: string): Promise<{ success: boolean; error?: string }> => {
@@ -545,7 +551,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const requestPasswordReset = async (
     email: string
-  ): Promise<{ success: boolean; delivered?: boolean; error?: string }> => {
+  ): Promise<{ success: boolean; delivered?: boolean; isSmtpConfigured?: boolean; error?: string }> => {
     await StorageService.syncCloudToLocal().catch(() => {});
     const users = StorageService.getUsers();
     const cleanEmail = email.trim().toLowerCase();
@@ -558,6 +564,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const code = StorageService.createResetCode(cleanEmail);
 
     let delivered = false;
+    let isSmtpConfigured = false;
+    let smtpError: string | undefined;
     try {
       const resp = await fetch('/api/auth/send-verification-email', {
         method: 'POST',
@@ -569,13 +577,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (contentType.includes('application/json')) {
           const data = await resp.json();
           delivered = Boolean(data?.delivered);
+          isSmtpConfigured = Boolean(data?.isSmtpConfigured);
+          if (!delivered && (data?.smtpError || data?.message)) {
+            smtpError = data.smtpError || data.message;
+          }
         }
       }
     } catch (e) {
       console.warn('Real email dispatch network error:', e);
     }
 
-    return { success: true, delivered };
+    return { success: true, delivered, isSmtpConfigured, error: smtpError };
   };
 
   const resetPasswordWithCode = async (

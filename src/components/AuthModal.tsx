@@ -485,7 +485,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       showToast('Şifre sıfırlama kodu e-posta adresinize gönderildi.', 'info');
     } else {
       setErrorMsg(
-        'Otomatik sıfırlama e-postası şu anda sunucuda yapılandırılmamıştır. Gmail/Google hesabınızla "Google ile Devam Et" butonunu kullanarak doğrudan giriş yapıp şifrenizi yenileyebilirsiniz.'
+        res.error ||
+          'Doğrulama e-postası gönderilemedi. Yönetici panelindeki SMTP ayarları veya sunucu ortam değişkenleri (info@testimgeldi.com) kontrol edilmelidir.'
       );
     }
   };
